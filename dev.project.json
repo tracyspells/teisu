@@ -1,0 +1,19 @@
+{
+	"name": "teisu-dev",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"Packages": {
+				"$className": "Folder",
+				"teisu": { "$path": "lib" }
+			},
+			"DevPackages": { "$path": "DevPackages" }
+		},
+		"TestService": {
+			"$className": "TestService",
+			"$properties": { "ExecuteWithStudioRun": true },
+			"spec": { "$path": "test/spec.server.luau" }
+		}
+	}
+}

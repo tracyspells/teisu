@@ -1,0 +1,12 @@
+*.rbxm
+*.rbxmx
+*.rbxl
+*.rbxlx
+*.lock
+
+sourcemap.json
+
+Packages
+DevPackages
+
+/scripts/roblox.d.luau
