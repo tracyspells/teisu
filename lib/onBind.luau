@@ -2,7 +2,6 @@ local types = require(script.Parent.types)
 
 local peek = require(script.Parent.peek)
 local subscribe = require(script.Parent.subscribe)
-local isStateObject = require(script.Parent.utils.isStateObject)
 
 type StateObject<T> = types.Value<T> & types.Computed<T>
 
@@ -18,8 +17,6 @@ type Cleanup = () -> ()
 	@return A function that unbinds the callback.
 ]=]
 local function onBind<T>(subject: StateObject<T>, callback: Listener<T>): Cleanup
-	assert(isStateObject(subject), `cannot call 'onBind()' with a non-state object (got {typeof(subject)}).`)
-
 	local result = peek(subject)
 	callback(result, result)
 
