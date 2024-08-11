@@ -1,3 +1,5 @@
+-- Credit to Elttob: https://github.com/dphfox/Fusion/blob/push-pull-execution/src/Graph/castToGraph.luau
+
 local types = require(script.Parent.Parent.types)
 
 local function castToNode(target: any): types.Node?

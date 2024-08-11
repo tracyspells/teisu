@@ -1,3 +1,5 @@
+-- Credit to Elttob: https://github.com/dphfox/Fusion/blob/push-pull-execution/src/Graph/depend.luau
+
 local types = require(script.Parent.Parent.types)
 local evaluate = require(script.Parent.evaluate)
 

@@ -1,4 +1,16 @@
+--[[
+	All credit goes to Elttob for his monotonic painting algorithm! 
+	
+
+	Source Code: https://github.com/dphfox/Fusion/blob/push-pull-execution/src/Graph/evaluate.luau
+	Blog: https://fluff.blog/2024/04/16/monotonic-painting.html
+
+	Slightly modified so it doesn't use `os.clock()`, and instead use a counter to represent global
+	state when a GraphObject (or in this case, a Node) is valid.
+]]
+
 local types = require(script.Parent.Parent.types)
+
 local evaluate = require(script.Parent.evaluate)
 local flags = require(script.Parent.flags)
 
