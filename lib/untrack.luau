@@ -3,6 +3,7 @@ local castToState = require(script.Parent.utils.castToState)
 
 type Computed<T> = types.Computed<T>
 type UsedAs<T> = types.UsedAs<T>
+type Node = types.Node
 
 local function castToComputed<T>(target: UsedAs<T>): Computed<T>?
 	local targetState = castToState(target)
@@ -33,14 +34,14 @@ local function untrack<T>(target: Computed<T> | T)
 
 			return
 		end
-	end
+	else
+		for parent in targetComputed.parents do
+			if parent.children[targetComputed :: Node] == nil then
+				continue
+			end
 
-	for parent in targetComputed.parents do
-		if parent.children[targetComputed] == nil then
-			continue
+			parent.children[targetComputed :: Node] = nil
 		end
-
-		parent.children[targetComputed] = nil
 	end
 end
 

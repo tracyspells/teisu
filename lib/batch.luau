@@ -19,7 +19,7 @@ local function add(dependencies: Array<Value<any>>): (...Value<any>) -> ()
 				error("you cannot batch non-state objects", 0)
 			end
 
-			if targetState.implements.value ~= true then
+			if targetState.implements and targetState.implements.value ~= true then
 				error("you cannot batch computed objects", 0)
 			end
 
