@@ -5,18 +5,10 @@ local value = require(script.Parent.Parent.value)
 local observe = require(script.Parent.Parent.observe)
 local subscribe = require(script.Parent.Parent.subscribe)
 local peek = require(script.Parent.Parent.peek)
+local count = require(script.Parent.Parent.utils.count)
 
 type Array<T> = types.Array<T>
 type Map<K, V> = types.Dictionary<K, V>
-
-local function count<K, V>(tbl: { [K]: V }): number
-	local count = 0
-	for _ in next, tbl do
-		count += 1
-	end
-
-	return count
-end
 
 return function()
 	it("returns mapped state", function()
