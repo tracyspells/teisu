@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+
+      - name: Install dependencies
+        run: wally install
+
+      - name: Generate sourcemap.json
+        run: rojo sourcemap dev.project.json --output sourcemap.json
+
+      - name: Download global Roblox types
+        shell: bash
+        run: curl -O https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau
+
+      - name: Run Luau Analyze
+        run: luau-lsp analyze
+          --defs=test/testez.d.luau
+          --defs=globalTypes.d.luau
+          --base-luaurc=.luaurc
+          --sourcemap=sourcemap.json
+          --ignore="**/_Index/**"
+          --no-strict-dm-types lib
+
+      - name: Check code quality
+        run: |
+          selene lib
+          stylua --check lib
