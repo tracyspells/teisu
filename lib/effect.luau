@@ -33,7 +33,7 @@ end
 ]=]
 local function effect(callback: (use: Use) -> Cleanup?): Cleanup
 	local disconnected = false
-	
+
 	local cleanup: Cleanup?
 	local gottenCleanupOnce = false
 
@@ -64,7 +64,7 @@ local function effect(callback: (use: Use) -> Cleanup?): Cleanup
 			else
 				print(result)
 			end
-			
+
 			return true
 		end,
 	}

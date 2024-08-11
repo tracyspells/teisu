@@ -32,7 +32,7 @@ return function()
 
 		for _, todo in TODOS do
 			todos:set(function(oldTodos)
-				local newTodos = table.clone(oldTodos) 
+				local newTodos = table.clone(oldTodos)
 				table.insert(newTodos, todo)
 
 				return newTodos
@@ -47,7 +47,7 @@ return function()
 		end
 
 		todos:set(function(oldTodos)
-			local newTodos = table.clone(oldTodos) 
+			local newTodos = table.clone(oldTodos)
 			table.clear(newTodos)
 
 			return newTodos

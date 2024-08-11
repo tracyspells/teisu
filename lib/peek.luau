@@ -13,15 +13,15 @@ type StateObject<T> = types.StateObject<T>
 	@return The value inside.
 ]=]
 local function peek<T>(target: UsedAs<T>): T
-    local targetState = castToState(target)
+	local targetState = castToState(target)
 
-    if targetState ~= nil then
-        evaluate(targetState, false)
+	if targetState ~= nil then
+		evaluate(targetState, false)
 
-        return targetState._value
-    else
-        return target :: T
-    end
+		return targetState._value
+	else
+		return target :: T
+	end
 end
 
 return peek

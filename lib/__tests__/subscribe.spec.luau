@@ -7,12 +7,12 @@ return function()
 		local counter = value(0)
 
 		local unsubscribe = subscribe(counter, function()
-            -- do nothing
+			-- do nothing
 		end)
 
-        expect(unsubscribe).to.be.ok()
+		expect(unsubscribe).to.be.ok()
 		expect(unsubscribe).to.be.a("function")
-		
+
 		unsubscribe()
 	end)
 
@@ -21,13 +21,17 @@ return function()
 		local changes = 0
 
 		subscribe(counter, function()
-            changes += 1
+			changes += 1
 		end)
 
 		expect(changes).to.equal(0)
-		counter:set(function(count) return count + 1 end)
+		counter:set(function(count)
+			return count + 1
+		end)
 		expect(changes).to.equal(1)
-		counter:set(function(count) return count + 1 end)
+		counter:set(function(count)
+			return count + 1
+		end)
 		expect(changes).to.equal(2)
 	end)
 
@@ -48,7 +52,7 @@ return function()
 		expect(newState).to.never.equal(oldState)
 	end)
 
-	it("allows self-cleanup", function()  
+	it("allows self-cleanup", function()
 		local counter = value(0)
 
 		local disconnected = false

@@ -2,7 +2,7 @@ local types = require(script.Parent.types)
 
 local computed = require(script.Parent.computed)
 
-type StateObject<T> = types.Value<T>| types.Computed<T>
+type StateObject<T> = types.Value<T> | types.Computed<T>
 type Computed<T> = types.Computed<T>
 
 type MappedConstructor =
@@ -21,22 +21,22 @@ type MappedConstructor =
 	@return A new read-only value with the mapped state.
 ]=]
 local function mapped<K0, V0, K1, V1>(subject: StateObject<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Computed<{ [K1]: V1 }>
-    return computed(function(use) 
-        local result: { [K1]: V1 } = {} 
-        local items = use(subject)
+	return computed(function(use)
+		local result: { [K1]: V1 } = {}
+		local items = use(subject)
 
-        for key, item in next, items do
-            local newValue, newKey = mapper(item, key)
-            
-            if newKey == nil then
-                newKey = key :: any
-            end
+		for key, item in next, items do
+			local newValue, newKey = mapper(item, key)
 
-            result[newKey :: K1] = newValue :: V1
-        end
+			if newKey == nil then
+				newKey = key :: any
+			end
 
-        return  result
-    end)
+			result[newKey :: K1] = newValue :: V1
+		end
+
+		return result
+	end)
 end
 
 return mapped :: MappedConstructor

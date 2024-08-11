@@ -35,7 +35,6 @@ export type Computed<T> = StateObject<T> & {
 	_processor: (use: (Computed<T>) -> T) -> T,
 }
 
-
 export type Listener<T> = (T, T) -> ()
 export type Compare = <T>(new: T, old: T) -> boolean
 
@@ -43,8 +42,6 @@ export type Use = <T>(Value<T> | Computed<T>) -> T
 export type UsedAs<T> = Value<T> | Computed<T> | T
 
 ---
-
--- sync
 
 export type NetworkPayload = {
 	type: "diff" | "full",

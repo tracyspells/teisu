@@ -18,12 +18,12 @@ type Cleanup = () -> ()
 	@return A function that unbinds the callback.
 ]=]
 local function onBind<T>(subject: StateObject<T>, callback: Listener<T>): Cleanup
-    assert(isStateObject(subject), `cannot call 'onBind()' with a non-state object (got {typeof(subject)}).`)
+	assert(isStateObject(subject), `cannot call 'onBind()' with a non-state object (got {typeof(subject)}).`)
 
-    local result = peek(subject)
-    callback(result, result)
+	local result = peek(subject)
+	callback(result, result)
 
-    return subscribe(subject, callback)
+	return subscribe(subject, callback)
 end
 
-return onBind  :: <T>(subject: types.Value<T> | types.Computed<T>, callback: Listener<T>) -> Cleanup
+return onBind :: <T>(subject: types.Value<T> | types.Computed<T>, callback: Listener<T>) -> Cleanup

@@ -19,8 +19,10 @@ return function()
 			expect(result).to.equal(index)
 		end
 
-		for index = 1, 3 do
-			b:set(function(number) return number + 1 end)
+		for _ = 1, 3 do
+			b:set(function(number)
+				return number + 1
+			end)
 		end
 
 		dispose()
@@ -78,7 +80,7 @@ return function()
 		expect(current).to.equal(2)
 	end)
 
-	it("accepts functions with no dependencies", function()  
+	it("accepts functions with no dependencies", function()
 		local initialized = false
 		local cleaned = false
 

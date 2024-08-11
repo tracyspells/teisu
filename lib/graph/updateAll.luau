@@ -9,73 +9,73 @@ local TERMINATION_TIME = 1 -- in seconds
 local TERMINATION_TIME_MULTIPLIER = 1
 
 local function updateAll(node: Node)
-    if flags.batch then
-        return
-    end
+	if flags.batch then
+		return
+	end
 
-    if node.state == "busy" then
-        error("infinite loop", 0) 
+	if node.state == "busy" then
+		error("infinite loop", 0)
 
-        return 
-    end
+		return
+	end
 
-    local isAMeaningfulChange = evaluate(node, true)
+	local isAMeaningfulChange = evaluate(node, true)
 
-    if not isAMeaningfulChange then
-        return
-    end
+	if not isAMeaningfulChange then
+		return
+	end
 
-    local searchInNow: Array<Node> = {}
-    local searchInNext: Array<Node> = {}
-    local invalidatedNodes: Array<Node> = {}
+	local searchInNow: Array<Node> = {}
+	local searchInNext: Array<Node> = {}
+	local invalidatedNodes: Array<Node> = {}
 
-    local terminateBy = os.clock() + TERMINATION_TIME * TERMINATION_TIME_MULTIPLIER
+	local terminateBy = os.clock() + TERMINATION_TIME * TERMINATION_TIME_MULTIPLIER
 
-    table.insert(searchInNow, node)
-    repeat
-        if os.clock() > terminateBy then
-            error("infinite loop", 0) 
+	table.insert(searchInNow, node)
+	repeat
+		if os.clock() > terminateBy then
+			error("infinite loop", 0)
 
-            return
-        end
+			return
+		end
 
-        local done = true
+		local done = true
 
-        for _, targetNode in searchInNow do
-            for child in targetNode.children do
-                if child.state == "clean" then
-                    done = false
+		for _, targetNode in searchInNow do
+			for child in targetNode.children do
+				if child.state == "clean" then
+					done = false
 
-                    table.insert(searchInNext, child)
-                    table.insert(invalidatedNodes, child)
-                elseif child.state == "busy" then
-                    error("infinite loop", 0) 
+					table.insert(searchInNext, child)
+					table.insert(invalidatedNodes, child)
+				elseif child.state == "busy" then
+					error("infinite loop", 0)
 
-                    return
-                end
-            end
-        end
+					return
+				end
+			end
+		end
 
-        searchInNow, searchInNext = searchInNext, searchInNow
-        table.clear(searchInNext)
-    until done
+		searchInNow, searchInNext = searchInNext, searchInNow
+		table.clear(searchInNext)
+	until done
 
-    local eagerNodes: Array<Node> = {}
+	local eagerNodes: Array<Node> = {}
 
-    for _, node in invalidatedNodes do
-        node.state = "dirty"
-        if node.timeliness == "eager" then
-            table.insert(eagerNodes, node)
-        end
-    end
+	for _, invalidNode in invalidatedNodes do
+		invalidNode.state = "dirty"
+		if invalidNode.timeliness == "eager" then
+			table.insert(eagerNodes, invalidNode)
+		end
+	end
 
-    table.sort(eagerNodes, function(a, b)
-        return a.createdAt < b.createdAt
-    end)
+	table.sort(eagerNodes, function(a, b)
+		return a.createdAt < b.createdAt
+	end)
 
-    for _, node in eagerNodes do
-        evaluate(node, false)
-    end
+	for _, eagerNode in eagerNodes do
+		evaluate(eagerNode, false)
+	end
 end
 
 return updateAll

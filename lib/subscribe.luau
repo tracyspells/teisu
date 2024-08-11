@@ -25,7 +25,7 @@ type Node = types.Node
 ]=]
 local function subscribe<T>(subject: StateObject<T>, callback: Listener<T>): Cleanup
 	local disconnected = false
-	
+
 	local state = peek(subject)
 
 	local node: Node = {
@@ -39,7 +39,7 @@ local function subscribe<T>(subject: StateObject<T>, callback: Listener<T>): Cle
 			if disconnected then
 				return false
 			end
-			
+
 			local targetSubject = castToNode(subject)
 			if targetSubject ~= nil then
 				depend(self, targetSubject)
@@ -49,21 +49,21 @@ local function subscribe<T>(subject: StateObject<T>, callback: Listener<T>): Cle
 			state = peek(subject)
 
 			if state ~= previousState then
-				local success, message = pcall(function()  
+				local success, message = pcall(function()
 					callback(state, previousState)
 				end)
-				
+
 				if not success then
 					print(message)
 				end
 			end
-			
+
 			return true
-		end
+		end,
 	}
 
 	evaluate(node, true)
-	
+
 	return function()
 		if disconnected then
 			return
