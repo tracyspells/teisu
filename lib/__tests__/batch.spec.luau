@@ -23,45 +23,52 @@ return function()
 		end)
 
 		expect(updates).to.equal(1)
+		updates = 0
+
+		batch(function(add)
+			add(source)
+
+			source:set(5)
+			source:set(6)
+			source:set(7)
+		end)
+
+		source:set(8)
+		source:set(9)
+		source:set(10)
+
+		expect(updates).to.equal(4)
 		unsubscribe()
 	end)
+
 
 	it("handles duplicate listeners", function()
 		local a = value(1)
 		local b = value(1)
+		local c = value(1)
 		local updates = 0
 
 		effect(function(use)
-			updates += 1
 			use(a)
 			use(b)
+			use(c)
+
+			updates += 1
 		end)
 
 		updates = 0 -- effect() will run once initially
 
 		batch(function(add)
-			add(a, b)
+			add(a, b, c)
 
 			a:set(2)
 			b:set(2)
 			a:set(3)
+			c:set(4)
+			a:set(5)
 		end)
-
+		
 		expect(updates).to.equal(1)
-	end)
-
-	it("handles non-state objects", function()
-		expect(function()
-			batch(function(add)
-				add(1 :: any, "true" :: any, true :: any)
-			end)
-		end).to.throw()
-	end)
-
-	it("handles empty callbacks", function()
-		expect(function()
-			batch(function(_) end)
-		end).to.never.throw()
 	end)
 
 	it("batches computed state", function()

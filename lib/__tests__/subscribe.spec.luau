@@ -33,6 +33,14 @@ return function()
 			return count + 1
 		end)
 		expect(changes).to.equal(2)
+
+		changes = 0
+
+		counter:set(1)
+		counter:set(2)
+		counter:set(3)
+
+		expect(changes).to.equal(3)
 	end)
 
 	it("passes old and new contents to the listener", function()

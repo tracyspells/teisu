@@ -2,13 +2,9 @@ local value = require(script.Parent.Parent.value)
 local peek = require(script.Parent.Parent.peek)
 
 return function()
-	local testA = value({ a = 0 })
-
-	afterEach(function()
-		testA:reset()
-	end)
-
 	it("is a state", function()
+		local testA = value(0)
+
 		expect(testA).to.be.ok()
 		expect(testA).to.be.a("table")
 
@@ -17,24 +13,28 @@ return function()
 	end)
 
 	it("edits its stored value", function()
-		testA:set(function(state)
-			return { a = state.a + 1 }
+		local source = value(0)
+
+		source:set(function(number)
+			return number + 1
 		end)
 
-		local result = peek(testA)
+		local result = peek(source)
 
-		expect(result.a).to.equal(1)
+		expect(result).to.equal(1)
 
-		testA:set(function(state)
-			return { a = state.a - 1 }
+		source:set(function(number)
+			return number - 1
 		end)
 
-		result = peek(testA)
+		result = peek(source)
 
-		expect(result.a).to.equal(0)
+		expect(result).to.equal(0)
 	end)
 
 	it("resets to initial state", function()
+		local testA = value({ a = 0 })
+
 		for _ = 1, 10 do
 			testA:set(function(state)
 				return { a = state.a + 1 }
@@ -49,5 +49,20 @@ return function()
 		result = peek(testA)
 
 		expect(result.a).to.equal(0)
+	end)
+
+	it("takes a custom equality function", function()
+		local max = value(1, {
+			equals = function(new, old)
+				return new < old
+			end,
+		})
+
+		max:set(5)
+		expect(peek(max)).to.equal(5)
+		max:set(2)
+		expect(peek(max)).to.equal(5)
+		max:set(10)
+		expect(peek(max)).to.equal(10)
 	end)
 end
