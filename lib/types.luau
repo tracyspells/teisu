@@ -48,9 +48,6 @@ export type NetworkPayload = {
 	contents: Dictionary<string, any>,
 }
 
-export type ClientSyncer = {
-	sync: (self: ClientSyncer, ...NetworkPayload) -> (),
-}
 export type ServerSyncer = {
 	hydrate: (self: ServerSyncer, player: Player) -> (),
 	connect: (self: ServerSyncer, callback: (player: Player, ...NetworkPayload) -> ()) -> () -> (),
@@ -64,6 +61,14 @@ export type ServerOptions = {
 
 export type MockServerSyncer = ServerSyncer & {
 	_sendDiff: (self: ServerSyncer, player: Player) -> (),
+}
+
+export type ClientSyncer = {
+	sync: (self: ClientSyncer, ...NetworkPayload) -> (),
+}
+
+export type ClientOptions = {
+	values: Dictionary<string, Value<any>>
 }
 
 return nil
