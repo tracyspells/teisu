@@ -10,7 +10,7 @@ type Cleanup = () -> ()
 
 --[=[
 	Similar to `subscribe()`, but the callback is called immediately
-    with the subject's initial values.
+    with the subject's initial state.
 	
 	@param subject The value or computed to bind to.
 	@param callback The function to call when the state changes.
