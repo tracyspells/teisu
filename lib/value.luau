@@ -28,16 +28,16 @@ local METATABLE = table.freeze({ __index = class })
 	@param options Optional configuration.
 	@return A new value
 ]=]
-local function value<T>(value: T, options: Options<T>?): Value<T>
-	assert(validateResult(true, "value", value, "object"))
+local function value<T>(initialValue: T, options: Options<T>?): Value<T>
+	assert(validateResult(true, "value", initialValue, "object"))
 
 	local self: Self<T> = setmetatable({
 		createdAt = os.clock(),
 		children = {},
 		state = "clean",
 		version = 0,
-		_value = value,
-		_initialValue = value,
+		_value = initialValue,
+		_initialValue = initialValue,
 		_equals = options and options.equals,
 	}, METATABLE) :: any
 
@@ -52,7 +52,7 @@ function class._evaluate<T>(_: Self<T>)
 end
 
 function class.reset<T>(self: Self<T>)
-	self:set(self._initialValue :: any)
+	self:set(self._initialValue)
 end
 
 function class.set<T>(self: Self<T>, setTo: T | ((T) -> T))

@@ -56,7 +56,7 @@ local function batch(callback: (add: (...Value<any>) -> ()) -> ())
 	if #dependencies > 0 then
 		for _, dependency in next, dependencies do
 			local success, result = pcall(function()
-				updateAll(dependency :: any)
+				updateAll(dependency)
 			end)
 
 			assert(success, result)

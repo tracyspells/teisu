@@ -22,7 +22,7 @@ type MappedConstructor =
 ]=]
 local function mapped<K0, V0, K1, V1>(subject: StateObject<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Computed<{ [K1]: V1 }>
     return computed(function(use) 
-        local mapped: { [K1]: V1 } = {} 
+        local result: { [K1]: V1 } = {} 
         local items = use(subject)
 
         for key, item in next, items do
@@ -32,10 +32,10 @@ local function mapped<K0, V0, K1, V1>(subject: StateObject<{ [K0]: V0 }>, mapper
                 newKey = key :: any
             end
 
-            mapped[newKey :: K1] = newValue :: V1
+            result[newKey :: K1] = newValue :: V1
         end
 
-        return mapped
+        return  result
     end)
 end
 
