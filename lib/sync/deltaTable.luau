@@ -45,7 +45,7 @@ local function applyDifference(base: any, difference: any): any
 	end
 
 	local clone = table.clone(base)
-	local isanArray = isArray(base) 
+	local isanArray = isArray(base)
 
 	for key in next, difference do
 		if isanArray == true and type(key) == "string" then
@@ -59,9 +59,9 @@ local function applyDifference(base: any, difference: any): any
 end
 
 return {
-    delta = difference,
-    apply = applyDifference,
-	
+	delta = difference,
+	apply = applyDifference,
+
 	NONE = NONE,
 	isNone = isNone,
 }

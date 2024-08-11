@@ -50,10 +50,10 @@ local function client(options: ClientOptions): ClientSyncer
 				if payload.type == "diff" then
 					local base = peek(values[key])
 					local result = apply(base, contents)
-					
+
 					values[key]:set(result)
 				else
-					values[key]:set(contents)	
+					values[key]:set(contents)
 				end
 			end
 		end

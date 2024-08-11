@@ -16,14 +16,13 @@ local deltaTable = require(script.Parent.deltaTable)
 type NetworkPayload = types.NetworkPayload
 
 type MockServerSyncer = types.MockServerSyncer
-type ServerSyncer  = types.ServerSyncer 
+type ServerSyncer = types.ServerSyncer
 type ServerOptions = types.ServerOptions
 
 type StatesMap = Dictionary<string, types.Value<any>>
 
 type Dictionary<K, V> = types.Dictionary<K, V>
 type Set<T> = { [T]: boolean }
-
 
 local IS_SERVER = RunService:IsServer()
 local IS_TESTING = RunService:IsStudio() and RunService:IsRunning()
@@ -76,7 +75,7 @@ local function server(options: ServerOptions): ServerSyncer
 			else
 				snapshots[2] = getSnapshot()
 			end
-			
+
 			return
 		end
 
