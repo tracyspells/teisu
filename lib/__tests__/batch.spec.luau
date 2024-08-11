@@ -41,7 +41,6 @@ return function()
 		unsubscribe()
 	end)
 
-
 	it("handles duplicate listeners", function()
 		local a = value(1)
 		local b = value(1)
@@ -67,7 +66,7 @@ return function()
 			c:set(4)
 			a:set(5)
 		end)
-		
+
 		expect(updates).to.equal(1)
 	end)
 

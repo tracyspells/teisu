@@ -103,7 +103,7 @@ return function()
 				return use(source) * 2
 			end)
 
-			computed(function(use)  
+			computed(function(use)
 				return use(double) * 2
 			end)
 		end
@@ -129,7 +129,7 @@ return function()
 
 		-- we need to call peek before every 'expect()' because
 		-- 'computed()' does lazy execution (i.e. only computes when needed)
-		peek(dependencies) 
+		peek(dependencies)
 		expect(reruns).to.equal(1)
 		expect(current).to.equal(1)
 
