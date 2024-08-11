@@ -1,3 +1,5 @@
+-- Credits go to Littensy: https://github.com/littensy/charm/blob/main/src/sync/client.luau
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
@@ -6,20 +8,10 @@ local types = require(script.Parent.Parent.types)
 local subscribe = require(script.Parent.Parent.subscribe)
 local peek = require(script.Parent.Parent.peek)
 
-local utils = script.Parent.Parent.utils
-local deltaTable = require(utils.deltaTable)
-local isStrictTable = require(utils.isStrictTable)
+local isStrictTable = require(script.Parent.Parent.utils.isStrictTable)
 
 local setInterval = require(script.Parent.setInterval)
-
-local IS_SERVER = RunService:IsServer()
-local IS_TESTING = RunService:IsStudio() and RunService:IsRunning()
-
-local ERROR_MESSAGES = {
-	ServerOnly = "'sync.server()' must be called from the server!",
-	Start = "'server:start()' must be called before 'server:%s()'!",
-	Options = "The 'options' argument in 'sync.server()' must be a table, got %s",
-}
+local deltaTable = require(script.Parent.deltaTable)
 
 type NetworkPayload = types.NetworkPayload
 
@@ -32,13 +24,31 @@ type StatesMap = Dictionary<string, types.Value<any>>
 type Dictionary<K, V> = types.Dictionary<K, V>
 type Set<T> = { [T]: boolean }
 
+
+local IS_SERVER = RunService:IsServer()
+local IS_TESTING = RunService:IsStudio() and RunService:IsRunning()
+
+local ERROR_MESSAGES = {
+	ServerOnly = "'sync.server()' must be called from the server!",
+	Start = "'sync:connect()' must be called before 'server:%s()'!",
+	Options = "The 'options' argument in 'sync.server()' must be a table, got %s",
+	Values = [[
+        The 'value' key in 'options' configuration must be a map of values!
+        (i.e. { [string]: Value<any> })
+    ]],
+}
+
 local function server(options: ServerOptions): ServerSyncer
+	if not IS_TESTING and not IS_SERVER then
+		error(ERROR_MESSAGES.ServerOnly)
+	end
+
 	if not isStrictTable(options) then
 		error(string.format(ERROR_MESSAGES.Options, typeof(options)))
 	end
 
-	if not IS_TESTING and not IS_SERVER then
-		error(ERROR_MESSAGES.ServerOnly)
+	if not isStrictTable(options.values) then
+		error(ERROR_MESSAGES.Values)
 	end
 
 	local playersConnected: Set<Player> = {}

@@ -1,4 +1,4 @@
--- https://github.com/littensy/charm/blob/main/src/sync/patch.luau
+-- Credit to Littensy: https://github.com/littensy/charm/blob/main/src/sync/patch.luau
 
 local types = require(script.Parent.Parent.types)
 
@@ -6,7 +6,6 @@ type AnyDictionary = types.AnyDictionary
 type Array<T> = types.Array<T>
 
 local NONE = { __none = "__none" }
-
 
 local function isArray(x: Array<any>): boolean
 	return #x > 0
@@ -39,7 +38,7 @@ local function difference(old: AnyDictionary, new: AnyDictionary): AnyDictionary
 end
 
 local function applyDifference(base: any, difference: any): any
-	if isNone(difference) then
+	if isNone(difference) == true then
 		return nil
 	elseif typeof(base) ~= "table" or typeof(difference) ~= "table" then
 		return difference
@@ -64,4 +63,5 @@ return {
     apply = applyDifference,
 	
 	NONE = NONE,
+	isNone = isNone,
 }

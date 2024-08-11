@@ -1,3 +1,5 @@
+-- Credit to Littensy: https://github.com/littensy/charm/blob/main/src/utils/setInterval.luau
+
 local RunService = game:GetService("RunService")
 
 local DEFAULT_UPDATE_RATE = (1 / 60) -- 60 Hz
@@ -27,7 +29,6 @@ local function setInterval(onUpdate: (deltaTime: number) -> (), interval: number
 
 	return function()
 		connection:Disconnect()
-		connection = nil :: never
 	end
 end
 

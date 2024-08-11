@@ -1,41 +1,42 @@
+-- Credits go to Littensy: https://github.com/littensy/charm/blob/main/src/sync/client.luau
+
 local RunService = game:GetService("RunService")
 
 local types = require(script.Parent.Parent.types)
 local peek = require(script.Parent.Parent.peek)
 
-local utils = script.Parent.Parent.utils
-local deltaTable = require(utils.deltaTable)
-local isStrictTable = require(utils.isStrictTable)
+local deltaTable = require(script.Parent.deltaTable)
+local isStrictTable = require(script.Parent.Parent.utils.isStrictTable)
+
+type NetworkPayload = types.NetworkPayload
+
+type ClientSyncer = types.ClientSyncer
+type ClientOptions = types.ClientOptions
+
+local apply = deltaTable.apply
 
 local IS_CLIENT = RunService:IsClient()
 local IS_TESTING = RunService:IsStudio() and RunService:IsRunning()
 
 local ERROR_MESSAGES = {
 	Initialize = "'sync.client()' must be called from the client!",
-	States = [[
-        The 'states' argument in 'sync.client()' must be a map of states!
-        (i.e. { [string]: State<any> })
+	Values = [[
+        The 'value' key in 'options' configuration must be a map of values!
+        (i.e. { [string]: Value<any> })
     ]],
 }
 
-type ClientSyncer = types.ClientSyncer
-type ClientOptions = {
-	values: ValuesMap 
-}
-
-type NetworkPayload = types.NetworkPayload
-
-type ValuesMap = Dictionary<string, types.Value<any>>
-
-type Dictionary<K, V> = types.Dictionary<K, V>
-
 local function client(options: ClientOptions): ClientSyncer
-	if not isStrictTable(options.values) then
-		error(ERROR_MESSAGES.States)
-	end
-
 	if not IS_TESTING and not IS_CLIENT then
 		error(ERROR_MESSAGES.Initialize)
+	end
+
+	if not isStrictTable(options) then
+		error(`The 'options' argument must be a table, got {typeof(options)}`)
+	end
+
+	if not isStrictTable(options.values) then
+		error(ERROR_MESSAGES.Values)
 	end
 
 	local self = {} :: ClientSyncer
@@ -47,7 +48,10 @@ local function client(options: ClientOptions): ClientSyncer
 
 			for key, contents in payload.contents do
 				if payload.type == "diff" then
-					values[key]:set(deltaTable.apply(peek(values[key]), contents))
+					local base = peek(values[key])
+					local result = apply(base, contents)
+					
+					values[key]:set(result)
 				else
 					values[key]:set(contents)	
 				end
