@@ -13,6 +13,6 @@
     "luau-lsp.platform.type": "roblox",
     "luau-lsp.require.mode": "relativeToFile",
     "luau-lsp.sourcemap.autogenerate": true,
-    "luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
+    "luau-lsp.sourcemap.rojoProjectFile": "dev.project.json",
     "luau-lsp.types.definitionFiles": ["test/testez.d.luau"],
 }
