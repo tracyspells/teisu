@@ -18,7 +18,8 @@ local function validateResult<T>(
 			return false,
 				if showErrorMessage
 					then `this {identifier}{if additionalMessage then " " .. additionalMessage else ""} must be one of the following types: {table.concat(
-						ACCEPTABLE_TYPES, ", "
+						ACCEPTABLE_TYPES,
+						", "
 					)}\n(got {typeof(result)}).`
 					else nil
 		end

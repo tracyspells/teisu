@@ -68,7 +68,7 @@ export type ClientSyncer = {
 }
 
 export type ClientOptions = {
-	values: Dictionary<string, Value<any>>
+	values: Dictionary<string, Value<any>>,
 }
 
 return nil
