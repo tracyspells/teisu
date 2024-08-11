@@ -1,8 +1,8 @@
 local types = require(script.Parent.types)
 
 local depend = require(script.Parent.graph.depend)
-local castToState = require(script.Parent.utils.castToState)
 local peek = require(script.Parent.peek)
+local castTo = require(script.Parent.utils.castTo)
 local validateResult = require(script.Parent.utils.validateResult)
 
 type Computed<T> = types.Computed<T>
@@ -17,7 +17,7 @@ type UsedAs<T> = types.UsedAs<T>
 
 local function use<T>(self: Computed<T>): Use
 	return function<T>(subject: UsedAs<T>): T
-		local targetState = castToState(subject)
+		local targetState = castTo.state(subject)
 
 		if targetState ~= nil then
 			depend(self, targetState)
@@ -36,8 +36,8 @@ local METATABLE = table.freeze({ __index = class })
 --[=[
 	Returns a read-only value that derives its state from one or more values.
 
-	@param callback The function that produces a new stae.
-	@return A read-only value.
+	@param callback The function that produces a new state.
+	@return A computed object.
 ]=]
 local function computed<T>(callback: (use: Use) -> T): Computed<T>
 	local self: Computed<T> = setmetatable({

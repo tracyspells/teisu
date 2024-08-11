@@ -1,6 +1,6 @@
 local types = require(script.Parent.types)
 
-local castToState = require(script.Parent.utils.castToState)
+local castTo = require(script.Parent.utils.castTo)
 local evaluate = require(script.Parent.graph.evaluate)
 
 type UsedAs<T> = types.UsedAs<T>
@@ -13,7 +13,7 @@ type StateObject<T> = types.StateObject<T>
 	@return The value inside.
 ]=]
 local function peek<T>(target: UsedAs<T>): T
-	local targetState = castToState(target)
+	local targetState = castTo.state(target)
 
 	if targetState ~= nil then
 		evaluate(targetState, false)

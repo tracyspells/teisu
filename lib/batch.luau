@@ -3,7 +3,7 @@ local types = require(script.Parent.types)
 local flags = require(script.Parent.graph.flags)
 local updateAll = require(script.Parent.graph.updateAll)
 
-local castToState = require(script.Parent.utils.castToState)
+local castTo = require(script.Parent.utils.castTo)
 
 type Value<T> = types.Value<T>
 type Array<T> = types.Array<T>
@@ -13,17 +13,19 @@ local function add(dependencies: Array<Value<any>>): (...Value<any>) -> ()
 		for index = 1, select("#", ...) do
 			local subject: Value<any> = select(index, ...)
 
-			local targetState = castToState(subject)
+			local targetState = castTo.state(subject)
 
 			if targetState == nil then
 				error("you cannot batch non-state objects", 0)
-			end
+			else
+				local targetValue = castTo.value(subject)
 
-			if targetState.implements and targetState.implements.value ~= true then
-				error("you cannot batch computed objects", 0)
+				if targetValue == nil then
+					error("you cannot batch computed objects", 0)
+				else
+					table.insert(dependencies, targetValue)
+				end
 			end
-
-			table.insert(dependencies, targetState :: Value<any>)
 		end
 	end
 end
@@ -43,23 +45,17 @@ local function batch(callback: (add: (...Value<any>) -> ()) -> ())
 	local dependencies: Array<Value<any>> = {}
 	flags.batch = true
 
-	local ok, err = pcall(function()
-		callback(add(dependencies))
-	end)
+	local ok, err: string? = pcall(callback, add(dependencies))
 
 	flags.batch = false
 
 	if not ok then
-		error(`error occured while batching updates: \n{err}`)
+		error(`error occured while batching updates: \n{err :: string}`)
 	end
 
 	if #dependencies > 0 then
 		for _, dependency in next, dependencies do
-			local success, result = pcall(function()
-				updateAll(dependency)
-			end)
-
-			assert(success, result)
+			updateAll(dependency)
 		end
 
 		table.clear(dependencies)

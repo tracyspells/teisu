@@ -1,38 +1,24 @@
 local types = require(script.Parent.types)
-local castToState = require(script.Parent.utils.castToState)
+local castTo = require(script.Parent.utils.castTo)
 
-type Computed<T> = types.Computed<T>
 type UsedAs<T> = types.UsedAs<T>
 type Node = types.Node
 
-local function castToComputed<T>(target: UsedAs<T>): Computed<T>?
-	local targetState = castToState(target)
-	if targetState ~= nil and targetState.implements.computed == true then
-		return targetState :: Computed<T>
-	end
-
-	return nil
-end
-
 --[=[
-    A helper function that removes dependencies of a read-only value.
+    A helper function that removes dependencies of a computed object.
     
-    @param target The read-only value.
+    @param target The computed object.
 ]=]
-local function untrack<T>(target: Computed<T> | T)
-	local targetComputed = castToComputed(target)
+local function untrack<T>(target: UsedAs<T>)
+	local targetComputed = castTo.computed(target)
 
 	if targetComputed == nil then
-		local targetState = castToState(target)
+		local targetValue = castTo.value(target)
 
-		if targetState ~= nil and targetState.implements.state == true then
-			error("You cannot untrack a State object!", 0)
-
-			return
-		else
+		if targetValue == nil then
 			error(`The argument you passed in 'untrack()' must be a Computed object, got {typeof(target)}`)
-
-			return
+		else
+			error("You cannot untrack a Value object!", 0)
 		end
 	else
 		for parent in targetComputed.parents do
