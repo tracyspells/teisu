@@ -143,7 +143,7 @@ local function server(options: ServerOptions): ServerSyncer
 				changed = false
 
 				for player in playersConnected do
-					task.spawn(callback, player, unpack(payloads))
+					task.spawn(sync, player, unpack(payloads))
 				end
 			end, options.interval)
 		)
