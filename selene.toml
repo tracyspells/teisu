@@ -2,4 +2,6 @@ std = "roblox+testez"
 
 [lints]
 global_usage = "allow"
+multiple_statements = "allow"
+unused_variable = "allow"
 shadowing = "allow"
