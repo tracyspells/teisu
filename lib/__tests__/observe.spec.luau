@@ -1,11 +1,9 @@
 local types = require(script.Parent.Parent.types)
-
-local value = require(script.Parent.Parent.value)
+local flec = require(script.Parent.Parent.flec)
 local observe = require(script.Parent.Parent.observe)
-local peek = require(script.Parent.Parent.peek)
 
 type Array<T> = types.Array<T>
-type Dictionary<Key, Value> = types.Dictionary<Key, Value>
+type Map<K, V> = types.Map<K, V>
 
 type Todo = "Wake up" | "Brush teeth" | "Take shower"
 
@@ -17,10 +15,10 @@ local TODOS: Array<Todo> = {
 
 return function()
 	it("observes lifetime of entities", function()
-		local todos = value({})
-		local result: Dictionary<number, Todo> = {}
+		local todos = flec({})
+		local result: Map<number, Todo> = {}
 
-		observe(todos, function(todo, index)
+		local stopObserving = observe(todos, function(todo, index)
 			result[index] = todo
 
 			return function()
@@ -31,7 +29,7 @@ return function()
 		end)
 
 		for _, todo in TODOS do
-			todos:set(function(oldTodos)
+			todos(function(oldTodos)
 				local newTodos = table.clone(oldTodos)
 				table.insert(newTodos, todo)
 
@@ -39,14 +37,14 @@ return function()
 			end)
 		end
 
-		local current = peek(todos)
+		local current = todos()
 
 		for index = 1, #TODOS do
 			expect(result[index]).to.be.ok()
 			expect(result[index]).to.equal(current[index])
 		end
 
-		todos:set(function(oldTodos)
+		todos(function(oldTodos)
 			local newTodos = table.clone(oldTodos)
 			table.clear(newTodos)
 
@@ -56,5 +54,7 @@ return function()
 		for index = 1, #TODOS do
 			expect(result[index]).to.equal(nil)
 		end
+
+		stopObserving()
 	end)
 end

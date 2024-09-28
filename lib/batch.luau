@@ -1,64 +1,61 @@
 local types = require(script.Parent.types)
+local graph = require(script.Parent.graph)
+local flags = require(script.Parent.flags)
 
-local flags = require(script.Parent.graph.flags)
-local updateAll = require(script.Parent.graph.updateAll)
-
-local castTo = require(script.Parent.utils.castTo)
-
-type Value<T> = types.Value<T>
 type Array<T> = types.Array<T>
+type Set<T> = types.Set<T>
 
-local function add(dependencies: Array<Value<any>>): (...Value<any>) -> ()
-	return function(...: Value<any>)
-		for index = 1, select("#", ...) do
-			local subject: Value<any> = select(index, ...)
+type Node = types.Node<any>
 
-			local targetState = castTo.state(subject)
-
-			if targetState == nil then
-				error("you cannot batch non-state objects", 0)
-			else
-				local targetValue = castTo.value(subject)
-
-				if targetValue == nil then
-					error("you cannot batch computed objects", 0)
-				else
-					table.insert(dependencies, targetValue)
-				end
-			end
-		end
-	end
-end
+local updateDescendants = graph.updateDescendants
+local capturing = graph.capturing
 
 --[=[
 	Runs the given callback and schedules listeners to be notified
 	only once after the callback has completed. Useful for batching 
-	multiple changes.
+	multiple flec changes.
 
 	@param callback The function to run.
 ]=]
-local function batch(callback: (add: (...Value<any>) -> ()) -> ())
-	if flags.batch then
-		return
+local function batch(callback: () -> ())
+	if flags.batching then
+		return callback()
 	end
 
-	local dependencies: Array<Value<any>> = {}
-	flags.batch = true
+	local key = "___batch"
+	local dependencies: Set<Node> = { [key :: any] = true }
+	local dependency: Node? = nil
 
-	local ok, err: string? = pcall(callback, add(dependencies))
+	capturing[dependencies] = true
+	flags.batching = true
 
-	flags.batch = false
+	local ok, message: string? = pcall(callback)
+
+	flags.batching = false
+
+	capturing[dependencies] = nil
+	dependencies[key :: any] = nil
 
 	if not ok then
-		error(`error occured while batching updates: \n{err :: string}`)
+		error(`error occured while batching updates: \n{message}`)
 	end
 
-	if #dependencies > 0 then
-		for _, dependency in next, dependencies do
-			updateAll(dependency)
-		end
+	for node in next, dependencies do
+		local isSourceNode = node.eager == nil and node.effect == false
 
+		node.isPartOfBatch = nil
+
+		if dependency == nil and isSourceNode then
+			dependency = node
+		end
+	end
+
+	-- we only need one dependency to update its descendants
+	-- this solves the issue of computeds/effects having more than one dependency
+	-- being updated each time after a batch call completes
+	if dependency ~= nil then
 		table.clear(dependencies)
+		updateDescendants(dependency)
 	end
 end
 

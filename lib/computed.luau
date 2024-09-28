@@ -1,84 +1,65 @@
+local graph = require(script.Parent.graph)
 local types = require(script.Parent.types)
 
-local depend = require(script.Parent.graph.depend)
-local peek = require(script.Parent.peek)
-local castTo = require(script.Parent.utils.castTo)
-local validateResult = require(script.Parent.utils.validateResult)
-
-type Computed<T> = types.Computed<T>
-
 type Set<T> = types.Set<T>
-type Dictionary<K, V> = types.Dictionary<K, V>
 
-type Node = types.Node
+type Molecule<T> = types.Molecule<T>
+type Node<T> = types.Node<T>
 
-type Use = types.Use
-type UsedAs<T> = types.UsedAs<T>
+type Options<T> = {
+	equals: (old: T, new: T) -> boolean
+}
 
-local function use<T>(self: Computed<T>): Use
-	return function<T>(subject: UsedAs<T>): T
-		local targetState = castTo.state(subject)
+local establishBonds = graph.establishBonds
+local evaluate = graph.evaluate
+local createNode = graph.createDerivedNode
+local capturing = graph.capturing
 
-		if targetState ~= nil then
-			depend(self, targetState)
+local NODE_KEY = graph.NODE_KEY
+
+local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
+	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil
+
+	local node
+	node = createNode(function()
+		local dependencies: Set<Node<any>> = {}
+		capturing[dependencies] = {}
+
+		local old = node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+		local new = callback()
+
+		capturing[dependencies] = nil
+
+		for dependency in next, dependencies do
+			establishBonds(node, dependency)
 		end
 
-		return peek(subject)
-	end :: Use
-end
-
-local class = {}
-class.implements = table.freeze({ node = true, computed = true })
-class.timeliness = "lazy"
-
-local METATABLE = table.freeze({ __index = class })
-
---[=[
-	Returns a read-only value that derives its state from one or more values.
-
-	@param callback The function that produces a new state.
-	@return A computed object.
-]=]
-local function computed<T>(callback: (use: Use) -> T): Computed<T>
-	local self: Computed<T> = setmetatable({
-		createdAt = os.clock(),
-		children = {},
-		parents = {},
-		state = "dirty",
-		version = 0,
-		_value = nil,
-		_processor = callback,
-	}, METATABLE) :: any
-
-	return self
-end
-
-function class._evaluate<T>(self: Computed<T>): boolean
-	local previousValue = self._value
-	local success, result = pcall(self._processor, use(self))
-
-	if success then
-		local ok, err = validateResult(true, "computed", result, "calculation")
-
-		if not ok then
-			print(err)
-
-			return false
+		if old ~= new and not (equals ~= nil and equals(old, new)) then
+			node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new
 		end
 
-		local isSimilar = (previousValue == result)
+		return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value
+	end)
+	
+	return function(...: any)
+		if select("#", ...) == 0 then
+			for set in next, capturing do
+				set[node] = true
+			end
 
-		if not isSimilar then
-			self._value = result
+			evaluate(node)
+
+			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 		end
-
-		return not isSimilar
-	else
-		print(result)
-
-		return false
+		
+		local argument = ...
+		
+		if argument == NODE_KEY then
+			return node :: any
+		end
+	
+		return nil :: never
 	end
 end
 
-table.freeze(class)
 return computed

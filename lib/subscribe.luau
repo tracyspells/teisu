@@ -1,80 +1,32 @@
 local types = require(script.Parent.types)
+local effect = require(script.Parent.effect)
 
-local depend = require(script.Parent.graph.depend)
-local castToNode = require(script.Parent.graph.castToNode)
-local evaluate = require(script.Parent.graph.evaluate)
-local peek = require(script.Parent.peek)
+type Molecule<T> = types.Molecule<T>
 
-type StateObject<T> = types.Value<T> & types.Computed<T>
+type Node<T> = types.Node<T>
 
-type Set<T> = types.Set<T>
-
-type Listener<T> = types.Listener<T>
 type Cleanup = () -> ()
+type Listener<T> = (T, T) -> ()
 
-type Node = types.Node
-
---[=[
-	Subscribes to changes in the given value or computed. The callback is
-	called with the current state and the previous state immediately after a
-	change occurs.
+local function subscribe<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
+	local old: T? = nil
 	
-	@param subject The value or computed to subscribe to.
-	@param callback The function to call when the state changes.
-	@return A function that unsubscribes the callback.
-]=]
-local function subscribe<T>(subject: StateObject<T>, callback: Listener<T>): Cleanup
-	local disconnected = false
+	local dispose = effect(function()
+		local new = molecule()
 
-	local state = peek(subject)
+		old = if old == nil then new else old
 
-	local node: Node = {
-		createdAt = os.clock(),
-		parents = {},
-		children = table.freeze({}),
-		timeliness = "eager",
-		state = "dirty",
-		version = 0,
-		_evaluate = function(self)
-			if disconnected then
-				return false
-			end
+		local the_same = new == old
+		
+		if not the_same then
+			local temp = old :: T
+			old = new
 
-			local targetSubject = castToNode(subject)
-			if targetSubject ~= nil then
-				depend(self, targetSubject)
-			end
-
-			local previousState = state
-			state = peek(subject)
-
-			if state ~= previousState then
-				local success, message = pcall(function()
-					callback(state, previousState)
-				end)
-
-				if not success then
-					print(message)
-				end
-			end
-
-			return true
-		end,
-	}
-
-	evaluate(node, true)
-
-	return function()
-		if disconnected then
-			return
+			listener(new, temp)
 		end
+	end)
 
-		disconnected = true
-
-		for parent in node.parents do
-			parent.children[node] = nil
-		end
-	end
+	return dispose
 end
 
-return subscribe :: <T>(subject: types.Value<T> | types.Computed<T>, callback: Listener<T>) -> Cleanup
+return subscribe

@@ -1,28 +1,30 @@
 local types = require(script.Parent.types)
-
 local effect = require(script.Parent.effect)
 
-type StateObject<T> = types.Value<T> | types.Computed<T>
+type Map<K, V> = types.Map<K, V>
 
-type Factory<Key, Value> = (value: Value, key: Key) -> ()
+type Molecule<T> = types.Molecule<T>
+type TableMolecule<K, V> = Molecule<Map<K, V>>
+
+type Factory<K, V> = (value: V, key: K) -> Cleanup?
 type Cleanup = () -> ()
 
 local function noop() end -- no operations
 
 --[=[
-	Creates an instance of `factory` for each item in a value's contents, and
+	Creates an instance of `factory` for each item in a molecule's state, and
 	cleans up the instance when the item is removed. Returns a cleanup function
-	that unsubscribes all instances.
+	that disconnects from all instances.
 	
-	@param subject The value or computed to observe.
+	@param subject The molecule to observe.
 	@param factory The function that tracks the lifecycle of each item.
 	@return A function that disconnects from all instances.
 ]=]
-local function observe<K, V>(subject: StateObject<{ [K]: V }>, factory: (value: V, key: K) -> Cleanup?): Cleanup
+local function observe<K, V>(subject: TableMolecule<K, V>, factory: Factory<K, V>): Cleanup
 	local connections: { [K]: Cleanup } = {}
 
-	local dispose = effect(function(use)
-		local state = use(subject)
+	local dispose = effect(function()
+		local state = subject()
 
 		for key, disconnect in connections do
 			if state[key] == nil then
@@ -39,17 +41,15 @@ local function observe<K, V>(subject: StateObject<{ [K]: V }>, factory: (value: 
 	end)
 
 	return function()
-		dispose()
-
-		for _, disconnect in connections do
+		for _, disconnect in next, connections do
 			disconnect()
 		end
 
 		table.clear(connections)
+		dispose()
 	end
 end
 
-return observe :: <K, V>(
-	subject: StateObject<{ [K]: V }>,
-	factory: (value: V, key: K) -> ()
-) -> Cleanup & <K, V>(subject: StateObject<{ [K]: V }>, factory: (value: V, key: K) -> Cleanup) -> Cleanup
+return observe 
+:: <K, V>(subject: TableMolecule<K, V>, factory: (value: V, key: K) -> ()) -> Cleanup 
+& <K, V>(subject: TableMolecule<K, V>, factory: (value: V, key: K) -> Cleanup) -> Cleanup
