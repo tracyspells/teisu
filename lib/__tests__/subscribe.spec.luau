@@ -25,16 +25,20 @@ return function()
 
 		expect(changes).to.equal(0)
 
-		counter(function(count) return count + 1 end)
-		
+		counter(function(count)
+			return count + 1
+		end)
+
 		expect(changes).to.equal(1)
 
-		counter(function(count) return count + 1 end)
+		counter(function(count)
+			return count + 1
+		end)
 
 		expect(changes).to.equal(2)
 
 		changes = 0
-		
+
 		counter(1)
 		counter(2)
 		counter(3)

@@ -50,6 +50,7 @@ local function observe<K, V>(subject: TableMolecule<K, V>, factory: Factory<K, V
 	end
 end
 
-return observe 
-:: <K, V>(subject: TableMolecule<K, V>, factory: (value: V, key: K) -> ()) -> Cleanup 
-& <K, V>(subject: TableMolecule<K, V>, factory: (value: V, key: K) -> Cleanup) -> Cleanup
+return observe :: <K, V>(
+	subject: TableMolecule<K, V>,
+	factory: (value: V, key: K) -> ()
+) -> Cleanup & <K, V>(subject: TableMolecule<K, V>, factory: (value: V, key: K) -> Cleanup) -> Cleanup

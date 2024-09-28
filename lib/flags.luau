@@ -1,3 +1,3 @@
 return {
-    batching = false
+	batching = false,
 }

@@ -4,7 +4,7 @@ local types = require(script.Parent.types)
 type Flec<T> = types.Flec<T>
 type Transformer<T> = (old: T) -> T
 type Options<T> = {
-	equals: (old: T, new: T) -> boolean
+	equals: (old: T, new: T) -> boolean,
 }
 
 local createNode = graph.createSourceNode
@@ -23,7 +23,7 @@ local NODE_KEY = graph.NODE_KEY
 local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 	local node = createNode(initial_value)
 	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil
-	
+
 	local function flec(...: any)
 		if select("#", ...) == 0 then
 			for set in next, capturing do
@@ -32,13 +32,13 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 
 			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 		end
-		
+
 		local target = ...
-		
+
 		if target == NODE_KEY then
 			return node :: any
 		end
-		
+
 		local old = node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 		local new: T
 
@@ -54,10 +54,10 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 
 			updateDescendants(node)
 		end
-		
+
 		return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 	end
-	
+
 	return flec
 end
 

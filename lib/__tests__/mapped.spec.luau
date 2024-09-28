@@ -33,14 +33,14 @@ return function()
 		items({ "d", "e", "f" })
 
 		expect(updates).to.equal(1)
-	
+
 		for index = 1, 3 do
 			local item, uppercase = items()[index], allUpperCase()[index]
 			expect(uppercase).to.equal(string.upper(item))
 		end
 
 		items({ "c" })
-		
+
 		expect(updates).to.equal(2)
 		expect(allUpperCase()[1]).to.equal(string.upper(items()[1]))
 
@@ -63,7 +63,7 @@ return function()
 
 		expect(updates).to.equal(5)
 		expect(count(allUpperCase())).to.equal(0)
-		
+
 		unsubscribe()
 	end)
 
@@ -81,7 +81,7 @@ return function()
 
 		local previous = map()
 		local previousItems = items()
-		
+
 		items({ previousItems[1], previousItems[3] })
 
 		local result = map()

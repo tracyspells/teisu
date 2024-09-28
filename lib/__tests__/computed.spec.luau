@@ -55,10 +55,10 @@ return function()
 		end)
 		expect(quadruple()).to.equal(8)
 	end)
-	
+
 	it("gets garbage collected", function()
 		local source = flec(0)
-		local node = graph.castToReactable(source) 
+		local node = graph.castToReactable(source)
 
 		computed(function()
 			return source()
@@ -70,7 +70,7 @@ return function()
 
 	it("garbage collects nested computed objects", function()
 		local source = flec(0)
-		local node = graph.castToReactable(source) 
+		local node = graph.castToReactable(source)
 
 		do
 			local double = computed(function()

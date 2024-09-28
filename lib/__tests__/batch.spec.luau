@@ -20,7 +20,7 @@ return function()
 			source(3)
 			source(4)
 		end)
-		
+
 		expect(updates).to.equal(1)
 		expect(result).to.equal(4)
 
@@ -32,7 +32,7 @@ return function()
 
 		expect(updates).to.equal(2)
 		expect(result).to.equal(7)
-		
+
 		unsubscribe()
 	end)
 
@@ -82,7 +82,7 @@ return function()
 		dispose()
 	end)
 
-	it("allows nested batching", function() 
+	it("allows nested batching", function()
 		local a = flec(0)
 		local b = flec(0)
 		local c = flec(0)
@@ -102,11 +102,11 @@ return function()
 
 		updates = 0
 
-		batch(function()  
+		batch(function()
 			a(2)
 
 			batch(function()
-				b(4) 
+				b(4)
 
 				d(function(num)
 					return num * 5
@@ -115,7 +115,7 @@ return function()
 
 			c(3)
 		end)
-		
+
 		expect(updates).to.equal(1)
 
 		expect(resultA).to.equal(2)

@@ -4,7 +4,6 @@ type Molecule<T> = types.Molecule<T>
 
 type Node<T> = types.Node<T>
 
-
 --[=[
 	Counts the number of elements in a table.
 

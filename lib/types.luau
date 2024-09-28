@@ -21,7 +21,7 @@ export type Node<T> = {
 	effect: (() -> T) | (() -> ()) | false,
 }
 
-export type Molecule<T> = (() -> T) 
+export type Molecule<T> = () -> T
 export type Flec<T> = (() -> T) & ((value: T | ((T) -> T)) -> T)
 
 export type UsedAs<T> = Molecule<T> | T

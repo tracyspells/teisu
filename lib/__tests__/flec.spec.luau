@@ -27,7 +27,6 @@ return function()
 		expect(source()).to.equal(2)
 	end)
 
-
 	it("takes a custom equality function", function()
 		local max = flec(0, {
 			equals = function(old, new)

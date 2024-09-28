@@ -7,7 +7,7 @@ type Molecule<T> = types.Molecule<T>
 type Node<T> = types.Node<T>
 
 type Options<T> = {
-	equals: (old: T, new: T) -> boolean
+	equals: (old: T, new: T) -> boolean,
 }
 
 local establishBonds = graph.establishBonds
@@ -40,7 +40,7 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 
 		return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value
 	end)
-	
+
 	return function(...: any)
 		if select("#", ...) == 0 then
 			for set in next, capturing do
@@ -51,13 +51,13 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 
 			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 		end
-		
+
 		local argument = ...
-		
+
 		if argument == NODE_KEY then
 			return node :: any
 		end
-	
+
 		return nil :: never
 	end
 end

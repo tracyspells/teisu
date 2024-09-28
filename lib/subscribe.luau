@@ -10,14 +10,14 @@ type Listener<T> = (T, T) -> ()
 
 local function subscribe<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
 	local old: T? = nil
-	
+
 	local dispose = effect(function()
 		local new = molecule()
 
 		old = if old == nil then new else old
 
 		local the_same = new == old
-		
+
 		if not the_same then
 			local temp = old :: T
 			old = new

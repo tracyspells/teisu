@@ -91,7 +91,6 @@ local function isSourceNode(value: any): (boolean, Node<any>?)
 end
 
 local function update<T>(node: Node<T>)
-
 	-- sever ties with this node's parents
 	for parent in node.parents do
 		parent.children[node] = nil
@@ -106,7 +105,7 @@ local function update<T>(node: Node<T>)
 			error(result)
 		end
 	end
-	
+
 	for child in node.children do
 		child.state = "dirty"
 	end

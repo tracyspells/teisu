@@ -21,23 +21,23 @@ type MappedConstructor =
 	@return A new read-only molecule with the mapped state.
 ]=]
 local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
-	local old: Map<any, any> 
+	local old: Map<any, any>
 
 	return computed(function()
 		local items = molecule()
-		
+
 		local new: { [K1]: V1 } = {}
-		
+
 		old = if old == nil then {} else old
-		
+
 		for key, value in next, items do
 			local newValue, newKey = mapper(value, key)
-			
+
 			local K1 = (if newKey == nil then key else newKey) :: K1
-			
+
 			local V1 = (if newValue == nil then value else newValue) :: V1
 			local oldV1 = old[K1]
-			
+
 			if oldV1 ~= nil and oldV1 == V1 then
 				V1 = oldV1
 			end
@@ -46,7 +46,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 		end
 
 		old = new
-		
+
 		return new
 	end)
 end
