@@ -1,100 +1,128 @@
-local value = require(script.Parent.Parent.value)
+local flec = require(script.Parent.Parent.flec)
 local subscribe = require(script.Parent.Parent.subscribe)
 local effect = require(script.Parent.Parent.effect)
-local computed = require(script.Parent.Parent.computed)
 local batch = require(script.Parent.Parent.batch)
-local peek = require(script.Parent.Parent.peek)
 
 return function()
-	it("batches updates", function()
-		local source = value(0)
-		local updates = 0
+	it("batches updates of one dependency", function()
+		local source = flec(0)
 
-		local unsubscribe = subscribe(source, function()
+		local updates = 0
+		local result = nil
+
+		local unsubscribe = subscribe(source, function(new, old)
 			updates += 1
+			result = new
 		end)
 
-		batch(function(add)
-			add(source)
-
-			source:set(2)
-			source:set(3)
-			source:set(4)
+		batch(function()
+			source(2)
+			source(3)
+			source(4)
 		end)
 
 		expect(updates).to.equal(1)
-		updates = 0
+		expect(result).to.equal(4)
 
-		batch(function(add)
-			add(source)
-
-			source:set(5)
-			source:set(6)
-			source:set(7)
+		batch(function()
+			source(5)
+			source(6)
+			source(7)
 		end)
 
-		source:set(8)
-		source:set(9)
-		source:set(10)
+		expect(updates).to.equal(2)
+		expect(result).to.equal(7)
 
-		expect(updates).to.equal(4)
 		unsubscribe()
 	end)
 
-	it("handles duplicate listeners", function()
-		local a = value(1)
-		local b = value(1)
-		local c = value(1)
-		local updates = 0
+	it("batches updates of multiple dependencies", function()
+		local a = flec(1)
+		local b = flec(1)
+		local c = flec(1)
 
-		effect(function(use)
-			use(a)
-			use(b)
-			use(c)
+		local updates = 0
+		local resultA, resultB, resultC
+
+		local dispose = effect(function()
+			resultA = a()
+			resultB = b()
+			resultC = c()
 
 			updates += 1
 		end)
 
 		updates = 0 -- effect() will run once initially
 
-		batch(function(add)
-			add(a, b, c)
-
-			a:set(2)
-			b:set(2)
-			a:set(3)
-			c:set(4)
-			a:set(5)
+		batch(function()
+			a(2)
+			b(2)
+			a(3)
+			c(4)
+			a(5)
 		end)
 
 		expect(updates).to.equal(1)
-	end)
+		expect(resultA).to.equal(5)
+		expect(resultB).to.equal(2)
+		expect(resultC).to.equal(4)
 
-	it("batches computed state", function()
-		local source = value(1)
-
-		local updates = 0
-		local computations = 0
-
-		local double = computed(function(use)
-			computations += 1
-			return use(source) * 2
+		batch(function()
+			a(5)
+			b(6)
+			a(7)
+			b(9)
 		end)
 
-		subscribe(double, function()
+		expect(updates).to.equal(2)
+		expect(resultA).to.equal(7)
+		expect(resultB).to.equal(9)
+		expect(resultC).to.equal(4)
+
+		dispose()
+	end)
+
+	it("allows nested batching", function()
+		local a = flec(0)
+		local b = flec(0)
+		local c = flec(0)
+		local d = flec(2)
+
+		local updates = 0
+		local resultA, resultB, resultC, resultD
+
+		local dispose = effect(function()
+			resultA = a()
+			resultB = b()
+			resultC = c()
+			resultD = d()
+
 			updates += 1
 		end)
 
-		batch(function(add)
-			add(source)
+		updates = 0
 
-			source:set(2)
-			source:set(3)
-			source:set(4)
+		batch(function()
+			a(2)
+
+			batch(function()
+				b(4)
+
+				d(function(num)
+					return num * 5
+				end)
+			end)
+
+			c(3)
 		end)
 
 		expect(updates).to.equal(1)
-		expect(computations).to.equal(2)
-		expect(peek(double)).to.equal(8)
+
+		expect(resultA).to.equal(2)
+		expect(resultB).to.equal(4)
+		expect(resultC).to.equal(3)
+		expect(resultD).to.equal(10)
+
+		dispose()
 	end)
 end

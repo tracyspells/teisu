@@ -1,20 +1,20 @@
 local types = require(script.Parent.Parent.types)
-
+local utils = require(script.Parent.Parent.utils)
 local mapped = require(script.Parent.Parent.mapped)
-local value = require(script.Parent.Parent.value)
+local flec = require(script.Parent.Parent.flec)
 local observe = require(script.Parent.Parent.observe)
 local subscribe = require(script.Parent.Parent.subscribe)
-local peek = require(script.Parent.Parent.peek)
-local count = require(script.Parent.Parent.utils.count)
 
 type Array<T> = types.Array<T>
-type Map<K, V> = types.Dictionary<K, V>
+type Map<K, V> = types.Map<K, V>
+
+local count = utils.count
 
 return function()
 	it("returns mapped state", function()
 		local updates = 0
 
-		local items = value({ "a", "b", "c" })
+		local items = flec({ "a", "b", "c" })
 		local allUpperCase = mapped(items, function(item)
 			return string.upper(item)
 		end)
@@ -24,64 +24,78 @@ return function()
 		end)
 
 		for index = 1, 3 do
-			local item = peek(allUpperCase)[index]
-			expect(item).to.equal(string.upper(peek(items)[index]))
+			local uppercase = allUpperCase()[index]
+			local item = items()[index]
+
+			expect(uppercase).to.equal(string.upper(item))
 		end
 
-		items:set({ "a", "b", "c", "d" })
+		items({ "d", "e", "f" })
+
 		expect(updates).to.equal(1)
 
-		for index = 1, 4 do
-			local item = peek(allUpperCase)[index]
-			expect(item).to.equal(string.upper(peek(items)[index]))
+		for index = 1, 3 do
+			local item, uppercase = items()[index], allUpperCase()[index]
+			expect(uppercase).to.equal(string.upper(item))
 		end
 
-		items:set({ "c" })
-		expect(updates).to.equal(2)
-		expect(peek(allUpperCase)[1]).to.equal(string.upper(peek(items)[1]))
+		items({ "c" })
 
-		items:set({ "c", "d" })
+		expect(updates).to.equal(2)
+		expect(allUpperCase()[1]).to.equal(string.upper(items()[1]))
+
+		items({ "c", "d" })
+
 		expect(updates).to.equal(3)
 
 		for index = 1, 2 do
-			local item = peek(allUpperCase)[index]
-			expect(item).to.equal(string.upper(peek(items)[index]))
+			local uppercase = allUpperCase()[index]
+			local item = items()[index]
+			expect(uppercase).to.equal(string.upper(item))
 		end
 
-		items:set({ [1] = "b", [3] = "f" })
-		expect(updates).to.equal(4)
-		expect(peek(allUpperCase)[2]).to.never.be.ok()
+		items({ [1] = "b", [3] = "f" })
 
-		items:set({})
+		expect(updates).to.equal(4)
+		expect(allUpperCase()[2]).to.never.be.ok()
+
+		items({})
+
 		expect(updates).to.equal(5)
-		expect(count(peek(allUpperCase))).to.equal(0)
+		expect(count(allUpperCase())).to.equal(0)
+
 		unsubscribe()
 	end)
 
 	it("uses key extractor", function()
-		local items = value({ { key = 1 }, { key = 2 }, { key = 3 } })
+		local items = flec({ { key = 1 }, { key = 2 }, { key = 3 } })
 		local map = mapped(items, function(item)
 			return item, item.key
 		end)
 
 		for key = 1, 3 do
-			local item = peek(map)[key]
-			expect(item).to.equal(peek(items)[key])
+			local a = map()[key]
+			local b = items()[key]
+			expect(a).to.equal(b)
 		end
 
-		local previous = peek(map)
-		local previousItems = peek(items)
-		items:set({ previousItems[1], previousItems[3] })
+		local previous = map()
+		local previousItems = items()
 
-		expect(peek(map)[1]).to.equal(previous[1])
-		expect(peek(map)[1]).to.equal(peek(items)[1])
-		expect(peek(map)[2]).to.never.be.ok()
-		expect(peek(map)[3]).to.equal(previous[3])
-		expect(peek(map)[3]).to.equal(peek(items)[2])
+		items({ previousItems[1], previousItems[3] })
+
+		local result = map()
+		local other = items()
+
+		expect(result[1]).to.equal(previous[1])
+		expect(result[1]).to.equal(other[1])
+		expect(result[2]).to.never.be.ok()
+		expect(result[3]).to.equal(previous[3])
+		expect(result[3]).to.equal(other[2])
 	end)
 
 	it("allows observe()", function()
-		local items = value({
+		local items = flec({
 			{ key = 1, value = "a" },
 			{ key = 2, value = "b" },
 			{ key = 3, value = "c" },
@@ -94,12 +108,15 @@ return function()
 		local added = 0
 		local deleted = 0
 
-		observe(map, function(item, key)
-			expect(item).to.equal(peek(items)[key])
+		local stopObserving = observe(map, function(item, key)
+			local original = items()[key]
+			expect(item).to.equal(original)
 			added += 1
 
 			return function()
-				expect(peek(map)[key]).to.never.be.ok()
+				local source = map()[key]
+
+				expect(source).to.never.be.ok()
 				deleted += 1
 			end
 		end)
@@ -107,15 +124,16 @@ return function()
 		expect(added).to.equal(3)
 		expect(deleted).to.equal(0)
 
-		local previous = peek(items)
-		items:set({ previous[1], previous[3] })
+		local previous = items()
+		items({ previous[1], previous[3] })
 
 		expect(added).to.equal(3)
 		expect(deleted).to.equal(1)
 
-		items:set({})
+		items({})
 
 		expect(added).to.equal(3)
 		expect(deleted).to.equal(3)
+		stopObserving()
 	end)
 end

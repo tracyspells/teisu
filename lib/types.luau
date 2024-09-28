@@ -1,51 +1,37 @@
-export type Dictionary<K, V> = { [K]: V }
-export type AnyDictionary = Dictionary<any, any>
+export type Map<K, V> = { [K]: V }
+export type WeakMap<K, V> = typeof(setmetatable({} :: Map<K, V>, { __mode = "k" }))
 
 export type Array<T> = { T }
-
-export type Set<T> = { [T]: boolean }
-export type WeakMap<K, V> = typeof(setmetatable({} :: Dictionary<K, V>, { __mode = "k" }))
-
----
-
-export type Node = {
-	children: Set<Node>,
-	parents: Set<Node>,
-	state: "clean" | "dirty" | "busy",
-	createdAt: number,
-	timeliness: "lazy" | "eager",
-	version: number,
-	_evaluate: (Node) -> boolean,
-}
-
-export type StateObject<T> = Node & {
-	implements: Set<string>,
-	_value: T,
-}
-
-export type Value<T> = StateObject<T> & {
-	_initialValue: T,
-	implements: { node: true, value: true },
-	reset: (self: Value<T>) -> (),
-	set: (self: Value<T>, setTo: T | ((T) -> T)) -> (),
-}
-
-export type Computed<T> = StateObject<T> & {
-	implements: { node: true, computed: true },
-	_processor: (use: (Computed<T>) -> T) -> T,
-}
+export type Set<T> = Map<T, (boolean | unknown)>
 
 export type Listener<T> = (T, T) -> ()
-export type Compare = <T>(new: T, old: T) -> boolean
 
-export type Use = <T>(Value<T> | Computed<T>) -> T
-export type UsedAs<T> = Value<T> | Computed<T> | T
+---
+export type NodeState = "clean" | "check" | "dirty"
+export type NodeNonCleanState = "check" | "dirty"
+
+export type Node<T> = {
+	children: Set<Node<T>>,
+	parents: Set<Node<T>>,
+	state: NodeState,
+	createdAt: number,
+	___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value: T | false,
+	eager: boolean?,
+	isPartOfBatch: boolean?,
+	effect: (() -> T) | (() -> ()) | false,
+}
+
+export type Molecule<T> = () -> T
+export type Flec<T> = (() -> T) & ((value: T | ((T) -> T)) -> T)
+
+export type UsedAs<T> = Molecule<T> | T
+export type Use = <T>(target: UsedAs<T>) -> T
 
 ---
 
 export type NetworkPayload = {
 	type: "diff" | "full",
-	contents: Dictionary<string, any>,
+	contents: Map<any, any>,
 }
 
 export type ServerSyncer = {
@@ -54,7 +40,7 @@ export type ServerSyncer = {
 }
 
 export type ServerOptions = {
-	values: Dictionary<string, Value<any>>,
+	flecs: Map<string, Flec<any>>,
 	interval: number?,
 	preserveHistory: boolean?,
 }
@@ -68,7 +54,7 @@ export type ClientSyncer = {
 }
 
 export type ClientOptions = {
-	values: Dictionary<string, Value<any>>,
+	flecs: Map<string, Flec<any>>,
 }
 
 return nil

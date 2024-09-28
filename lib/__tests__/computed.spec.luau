@@ -1,152 +1,126 @@
-local value = require(script.Parent.Parent.value)
+local utils = require(script.Parent.Parent.utils)
+local graph = require(script.Parent.Parent.graph)
+local flec = require(script.Parent.Parent.flec)
 local computed = require(script.Parent.Parent.computed)
-local untrack = require(script.Parent.Parent.untrack)
-local peek = require(script.Parent.Parent.peek)
-local collect = require(script.Parent.Parent.utils.collect)
-local count = require(script.Parent.Parent.utils.count)
+
+local collect = utils.collect
+local count = utils.count
 
 return function()
 	it("memoizes the result", function()
 		local calls = 0
 
-		local a = value(0)
-		local b = value(1)
+		local a = flec(0)
+		local b = flec(1)
 
-		local add = computed(function(use)
+		local add = computed(function()
 			calls += 1
-
-			local numberA = use(a)
-			local numberB = use(b)
-
-			local result = numberA + numberB
-
-			return result
+			return a() + b()
 		end)
 
-		expect(peek(add)).to.equal(1)
+		expect(add()).to.equal(1)
 		expect(calls).to.equal(1)
 
-		a:set(function(number)
+		a(function(number)
 			return number + 1
 		end)
 
-		expect(peek(add)).to.equal(2)
+		expect(add()).to.equal(2)
 		expect(calls).to.equal(2)
 
-		b:set(function(number)
+		b(function(number)
 			return number + 2
 		end)
-		b:set(function(number)
+		b(function(number)
 			return number + 2
 		end)
 
-		expect(peek(add)).to.equal(6)
+		expect(add()).to.equal(6)
 		expect(calls).to.equal(3)
 	end)
 
 	it("can be nested", function()
-		local source = value(1)
-		local double = computed(function(use)
-			return use(source) * 2
+		local source = flec(1)
+		local double = computed(function()
+			return source() * 2
 		end)
 
-		local quadruple = computed(function(use)
-			return use(double) * 2
+		local quadruple = computed(function()
+			return double() * 2
 		end)
 
-		expect(peek(quadruple)).to.equal(4)
-		source:set(function(number)
+		expect(quadruple()).to.equal(4)
+		source(function(number)
 			return number + 1
 		end)
-		expect(peek(quadruple)).to.equal(8)
-	end)
-
-	it("allows untrack()", function()
-		local source = value(1)
-		local double = computed(function(use)
-			return use(source) * 2
-		end)
-
-		local quadruple = computed(function(use)
-			return use(double) * 2
-		end)
-
-		expect(peek(quadruple)).to.equal(4)
-		untrack(quadruple)
-		source:set(2)
-		expect(peek(quadruple)).to.equal(4)
-		untrack(quadruple) -- no op
-		source:set(3)
-		expect(peek(quadruple)).to.equal(4)
-		expect(peek(double)).to.equal(6)
-		untrack(double)
-		source:set(4)
-		expect(peek(double)).to.equal(6)
+		expect(quadruple()).to.equal(8)
 	end)
 
 	it("gets garbage collected", function()
-		local source = value(0)
+		local source = flec(0)
+		local node = graph.castToReactable(source)
 
-		computed(function(use)
-			return use(source)
+		computed(function()
+			return source()
 		end)
 
 		collect()
-		expect(count(source.children)).to.equal(0)
+		expect(count((node :: any).children)).to.equal(0)
 	end)
 
 	it("garbage collects nested computed objects", function()
-		local source = value(0)
+		local source = flec(0)
+		local node = graph.castToReactable(source)
 
 		do
-			local double = computed(function(use)
-				return use(source) * 2
+			local double = computed(function()
+				return source() * 2
 			end)
 
-			computed(function(use)
-				return use(double) * 2
+			computed(function()
+				return double() * 2
 			end)
 		end
 
 		collect()
-		expect(count(source.children)).to.equal(0)
+		expect(count((node :: any).children)).to.equal(0)
 	end)
 
 	it("tracks conditional dependencies", function()
-		local condition = value(false)
-		local a = value(0)
-		local b = value(1)
+		local condition = flec(false)
+		local a = flec(0)
+		local b = flec(1)
 
 		local reruns = 0
 		local current
 
-		local dependencies = computed(function(use)
+		local dependencies = computed(function()
 			reruns += 1
-			current = if use(condition) then use(a) else use(b)
+			current = if condition() then a() else b()
 
 			return current
 		end)
 
 		-- we need to call peek before every 'expect()' because
 		-- 'computed()' does lazy execution (i.e. only computes when needed)
-		peek(dependencies)
+		dependencies()
 		expect(reruns).to.equal(1)
 		expect(current).to.equal(1)
 
-		condition:set(true)
-		peek(dependencies)
+		condition(true)
+		dependencies()
 		expect(reruns).to.equal(2)
 		expect(current).to.equal(0)
 
-		a:set(1)
-		b:set(2)
-		peek(dependencies)
-		expect(reruns).to.equal(2)
-		expect(current).to.equal(0)
-
-		condition:set(false)
-		peek(dependencies)
+		a(1)
+		b(2)
+		dependencies()
 		expect(reruns).to.equal(3)
+		expect(current).to.equal(1)
+
+		condition(false)
+		dependencies()
+		expect(reruns).to.equal(4)
 		expect(current).to.equal(2)
 	end)
 end

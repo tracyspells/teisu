@@ -1,41 +1,53 @@
 local types = require(script.Parent.types)
-
 local computed = require(script.Parent.computed)
 
-type StateObject<T> = types.Value<T> | types.Computed<T>
-type Computed<T> = types.Computed<T>
+type Map<K, V> = types.Map<K, V>
+
+type Molecule<T> = types.Molecule<T>
 
 type MappedConstructor =
-	(<K0, V0, K1, V1>(subject: StateObject<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1)) -> Computed<{ [K1]: V1 }>)
-	& (<K0, V0, V1>(subject: StateObject<{ [K0]: V0 }>, mapper: (V0, K0) -> V1?) -> Computed<{ [K0]: V1 }>)
-	& (<K0, V0, K1, V1>(subject: StateObject<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Computed<{ [K1]: V1 }>)
+	(<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1)) -> Molecule<{ [K1]: V1 }>)
+	& (<K0, V0, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> V1?) -> Molecule<{ [K0]: V1 }>)
+	& (<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Molecule<{ [K1]: V1 }>)
 
 --[=[
-	Maps each entry in the value's contents to a new key-value pair. If the `mapper`
+	Maps each entry in a molecule's state to a new key-value pair. If the `mapper`
 	function returns `undefined`, the entry is omitted from the resulting map.
-	When the atom changes, the `mapper` is called for each entry in the state
+	When the molecule changes, the `mapper` is called for each entry in the state
 	to compute the new state.
 	
-	@param subject The value or computed to observe.
+	@param subject The molecule to observe.
 	@param mapper The function that maps each entry.
-	@return A new read-only value with the mapped state.
+	@return A new read-only molecule with the mapped state.
 ]=]
-local function mapped<K0, V0, K1, V1>(subject: StateObject<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Computed<{ [K1]: V1 }>
-	return computed(function(use)
-		local result: { [K1]: V1 } = {}
-		local items = use(subject)
+local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
+	local old: Map<any, any>
 
-		for key, item in next, items do
-			local newValue, newKey = mapper(item, key)
+	return computed(function()
+		local items = molecule()
 
-			if newKey == nil then
-				newKey = key :: any
+		local new: { [K1]: V1 } = {}
+
+		old = if old == nil then {} else old
+
+		for key, value in next, items do
+			local newValue, newKey = mapper(value, key)
+
+			local K1 = (if newKey == nil then key else newKey) :: K1
+
+			local V1 = (if newValue == nil then value else newValue) :: V1
+			local oldV1 = old[K1]
+
+			if oldV1 ~= nil and oldV1 == V1 then
+				V1 = oldV1
 			end
 
-			result[newKey :: K1] = newValue :: V1
+			new[K1] = V1
 		end
 
-		return result
+		old = new
+
+		return new
 	end)
 end
 

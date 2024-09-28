@@ -1,3 +1,0 @@
-return {
-	batch = false,
-}
