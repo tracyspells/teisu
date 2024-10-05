@@ -1,3 +1,7 @@
+if not game then
+	script = require("../test/relative-string")
+end
+
 local graph = require(script.Parent.graph)
 local types = require(script.Parent.types)
 
@@ -8,10 +12,8 @@ type Node<T> = types.Node<T>
 
 type Cleanup = () -> ()
 
-local establishBonds = graph.establishBonds
 local evaluate = graph.evaluate
 local createNode = graph.createEagerNode
-local capturing = graph.capturing
 
 local function effect(callback: () -> Cleanup?): Cleanup
 	local node: Node<any>
@@ -24,7 +26,7 @@ local function effect(callback: () -> Cleanup?): Cleanup
 		if not disconnected then
 			disconnected = true
 
-			for parent in node.parents do
+			for parent in next, node.parents do
 				parent.children[node] = nil
 			end
 
@@ -39,19 +41,11 @@ local function effect(callback: () -> Cleanup?): Cleanup
 			return
 		end
 
-		local dependencies: Set<Node<any>> = {}
-		capturing[dependencies] = {}
-
 		if gottenCleanupOnce and cleanup then
 			cleanup()
 		end
 
 		cleanup = callback()
-		capturing[dependencies] = nil
-
-		for dependency in next, dependencies do
-			establishBonds(node, dependency)
-		end
 
 		if cleanup and not gottenCleanupOnce then
 			gottenCleanupOnce = true

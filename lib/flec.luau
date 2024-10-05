@@ -1,3 +1,7 @@
+if not game then
+	script = require("../test/relative-string")
+end
+
 local graph = require(script.Parent.graph)
 local types = require(script.Parent.types)
 
