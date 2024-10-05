@@ -17,12 +17,6 @@ local capturing: Set<Set<Node<any>>> = {}
 
 local NODE_KEY = newproxy()
 
-local function weak_map<K, V>(tbl: Map<K, V>)
-	local map = setmetatable({} :: Map<K, V>, { __mode = "k" })
-
-	return map :: typeof(map)
-end
-
 local function createSourceNode<T>(initialState: T): Node<T>
 	return {
 		parents = table.freeze({}),
@@ -113,12 +107,12 @@ local function update<T>(node: Node<T>)
 		local parents: Set<Node<any>> = {}
 		capturing[parents] = {}
 
-		local ok, result: string? = xpcall(effect :: () -> (), debug.traceback)
+		local ok, message: string? = xpcall(effect :: () -> (), debug.traceback)
 
 		capturing[parents] = nil
 
 		if not ok then
-			error(result)
+			error(message)
 		end
 
 		for parent in next, parents do
@@ -126,16 +120,14 @@ local function update<T>(node: Node<T>)
 		end
 	end
 
-	for child in node.children do
+	for child in next, node.children do
 		child.state = "dirty"
 	end
-
-	node.state = "clean"
 end
 
 local function updateIfNecessary<T>(node: Node<T>)
 	if node.state == "check" then
-		for parent in node.parents do
+		for parent in next, node.parents do
 			updateIfNecessary(parent)
 
 			local currentState: NodeNonCleanState = node.state
@@ -188,29 +180,24 @@ local function updateDescendants(sourceNode: Node<any>)
 		for child in next, children do
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager ~= nil and true or false
+			local isEmpty = next(child.children) == nil
 
 			child.state = if isDirectChild then "dirty" else "check"
 
 			if isChildEager and table.find(eagerNodesSeen, child.createdAt) == nil then
 				table.insert(eagerNodes, child)
 				table.insert(eagerNodesSeen, child.createdAt)
-
-				-- eager nodes don't have any children
-				-- so it's fine to skip them here
-				continue
 			end
 
-			table.insert(queue, child.children)
+			if not isEmpty then
+				table.insert(queue, child.children)
+			end
 		end
 	end
 
 	table.clear(eagerNodesSeen)
 
-	table.sort(eagerNodes, function(a, b)
-		return a.createdAt < b.createdAt
-	end)
-
-	for _, node in eagerNodes do
+	for _, node in next, eagerNodes do
 		updateIfNecessary(node)
 	end
 end
