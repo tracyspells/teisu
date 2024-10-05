@@ -1,17 +1,18 @@
-local types = require(script.Parent.Parent.types)
-local utils = require(script.Parent.Parent.utils)
-local mapped = require(script.Parent.Parent.mapped)
-local flec = require(script.Parent.Parent.flec)
-local observe = require(script.Parent.Parent.observe)
-local subscribe = require(script.Parent.Parent.subscribe)
+local teisu = require("../../lib/init")
+local count = require("../utils/count")
 
-type Array<T> = types.Array<T>
-type Map<K, V> = types.Map<K, V>
+local flec = teisu.flec
+local observe = teisu.observe
+local mapped = teisu.mapped
+local subscribe = teisu.subscribe
 
-local count = utils.count
+type CASE = (name: string) -> ()
+type CHECK = <T>(value: T) -> T
 
-return function()
-	it("returns mapped state", function()
+return function(CASE: CASE, CHECK: CHECK)
+	do
+		CASE("validate")
+
 		local updates = 0
 
 		local items = flec({ "a", "b", "c" })
@@ -27,47 +28,50 @@ return function()
 			local uppercase = allUpperCase()[index]
 			local item = items()[index]
 
-			expect(uppercase).to.equal(string.upper(item))
+			CHECK(uppercase == string.upper(item))
 		end
 
 		items({ "d", "e", "f" })
 
-		expect(updates).to.equal(1)
+		CHECK(updates == 1)
 
 		for index = 1, 3 do
 			local item, uppercase = items()[index], allUpperCase()[index]
-			expect(uppercase).to.equal(string.upper(item))
+			CHECK(uppercase == string.upper(item))
 		end
 
 		items({ "c" })
 
-		expect(updates).to.equal(2)
-		expect(allUpperCase()[1]).to.equal(string.upper(items()[1]))
+		CHECK(updates == 2)
+		CHECK(allUpperCase()[1] == string.upper(items()[1]))
 
 		items({ "c", "d" })
 
-		expect(updates).to.equal(3)
+		CHECK(updates == 3)
 
 		for index = 1, 2 do
 			local uppercase = allUpperCase()[index]
 			local item = items()[index]
-			expect(uppercase).to.equal(string.upper(item))
+
+			CHECK(uppercase == string.upper(item))
 		end
 
 		items({ [1] = "b", [3] = "f" })
 
-		expect(updates).to.equal(4)
-		expect(allUpperCase()[2]).to.never.be.ok()
+		CHECK(updates == 4)
+		CHECK(allUpperCase()[2] == nil)
 
 		items({})
 
-		expect(updates).to.equal(5)
-		expect(count(allUpperCase())).to.equal(0)
+		CHECK(updates == 5)
+		CHECK(count(allUpperCase()) == 0)
 
 		unsubscribe()
-	end)
+	end
 
-	it("uses key extractor", function()
+	do
+		CASE("key extraction")
+
 		local items = flec({ { key = 1 }, { key = 2 }, { key = 3 } })
 		local map = mapped(items, function(item)
 			return item, item.key
@@ -76,7 +80,8 @@ return function()
 		for key = 1, 3 do
 			local a = map()[key]
 			local b = items()[key]
-			expect(a).to.equal(b)
+
+			CHECK(a == b)
 		end
 
 		local previous = map()
@@ -87,14 +92,18 @@ return function()
 		local result = map()
 		local other = items()
 
-		expect(result[1]).to.equal(previous[1])
-		expect(result[1]).to.equal(other[1])
-		expect(result[2]).to.never.be.ok()
-		expect(result[3]).to.equal(previous[3])
-		expect(result[3]).to.equal(other[2])
-	end)
+		CHECK(result[1] == previous[1])
+		CHECK(result[1] == other[1])
 
-	it("allows observe()", function()
+		CHECK(result[2] == nil)
+
+		CHECK(result[3] == previous[3])
+		CHECK(result[3] == other[2])
+	end
+
+	do
+		CASE("observe() support")
+
 		local items = flec({
 			{ key = 1, value = "a" },
 			{ key = 2, value = "b" },
@@ -110,30 +119,31 @@ return function()
 
 		local stopObserving = observe(map, function(item, key)
 			local original = items()[key]
-			expect(item).to.equal(original)
+			CHECK(item == original)
 			added += 1
 
 			return function()
 				local source = map()[key]
 
-				expect(source).to.never.be.ok()
+				CHECK(source == nil)
 				deleted += 1
 			end
 		end)
 
-		expect(added).to.equal(3)
-		expect(deleted).to.equal(0)
+		CHECK(added == 3)
+		CHECK(deleted == 0)
 
 		local previous = items()
 		items({ previous[1], previous[3] })
 
-		expect(added).to.equal(3)
-		expect(deleted).to.equal(1)
+		CHECK(added == 3)
+		CHECK(deleted == 1)
 
 		items({})
 
-		expect(added).to.equal(3)
-		expect(deleted).to.equal(3)
+		CHECK(added == 3)
+		CHECK(deleted == 3)
+
 		stopObserving()
-	end)
+	end
 end

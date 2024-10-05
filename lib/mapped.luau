@@ -1,3 +1,7 @@
+if not game then
+	script = require("../test/relative-string")
+end
+
 local types = require(script.Parent.types)
 local computed = require(script.Parent.computed)
 

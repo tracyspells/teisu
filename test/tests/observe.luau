@@ -1,9 +1,13 @@
-local types = require(script.Parent.Parent.types)
-local flec = require(script.Parent.Parent.flec)
-local observe = require(script.Parent.Parent.observe)
+local teisu = require("../../lib/init")
 
-type Array<T> = types.Array<T>
-type Map<K, V> = types.Map<K, V>
+local flec = teisu.flec
+local observe = teisu.observe
+
+type Array<T> = { T }
+type Map<K, V> = { [K]: V }
+
+type CASE = (name: string) -> ()
+type CHECK = <T>(value: T) -> T
 
 type Todo = "Wake up" | "Brush teeth" | "Take shower"
 
@@ -13,8 +17,10 @@ local TODOS: Array<Todo> = {
 	"Take shower",
 }
 
-return function()
-	it("observes lifetime of entities", function()
+return function(CASE: CASE, CHECK: CHECK)
+	do
+		CASE("entity lifecycle")
+
 		local todos = flec({})
 		local result: Map<number, Todo> = {}
 
@@ -40,8 +46,8 @@ return function()
 		local current = todos()
 
 		for index = 1, #TODOS do
-			expect(result[index]).to.be.ok()
-			expect(result[index]).to.equal(current[index])
+			CHECK(result[index] ~= nil)
+			CHECK(result[index] == current[index])
 		end
 
 		todos(function(oldTodos)
@@ -52,9 +58,9 @@ return function()
 		end)
 
 		for index = 1, #TODOS do
-			expect(result[index]).to.equal(nil)
+			CHECK(result[index] == nil)
 		end
 
 		stopObserving()
-	end)
+	end
 end

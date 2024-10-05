@@ -1,8 +1,11 @@
+if not game then
+	script = require("../test/relative-string")
+end
+
 local types = require(script.Parent.types)
 local graph = require(script.Parent.graph)
 local flags = require(script.Parent.flags)
 
-type Array<T> = types.Array<T>
 type Set<T> = types.Set<T>
 
 type Node = types.Node<any>

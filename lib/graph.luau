@@ -1,6 +1,11 @@
+if not game then
+	script = require("../test/relative-string")
+end
+
 local types = require(script.Parent.types)
 local flags = require(script.Parent.flags)
 
+type Map<K, V> = types.Map<K, V>
 type Array<T> = types.Array<T>
 type Set<T> = types.Set<T>
 
@@ -11,6 +16,12 @@ type NodeNonCleanState = types.NodeNonCleanState
 local capturing: Set<Set<Node<any>>> = {}
 
 local NODE_KEY = newproxy()
+
+local function weak_map<K, V>(tbl: Map<K, V>)
+	local map = setmetatable({} :: Map<K, V>, { __mode = "k" })
+
+	return map :: typeof(map)
+end
 
 local function createSourceNode<T>(initialState: T): Node<T>
 	return {
@@ -23,7 +34,7 @@ local function createSourceNode<T>(initialState: T): Node<T>
 	}
 end
 
-local function createDerivedNode<T>(effect: () -> T): Node<T>
+local function createDerivedNode<T>(effect: () -> ()): Node<T>
 	return {
 		parents = {},
 		children = {},
@@ -92,23 +103,34 @@ end
 
 local function update<T>(node: Node<T>)
 	-- sever ties with this node's parents
-	for parent in node.parents do
+	for parent in next, node.parents do
 		parent.children[node] = nil
 		node.parents[parent] = nil
 	end
 
-	local effect = node.effect :: (() -> ()) | false
+	local effect = node.effect :: (() -> ()) | boolean
 	if effect ~= false then
+		local parents: Set<Node<any>> = {}
+		capturing[parents] = {}
+
 		local ok, result: string? = xpcall(effect :: () -> (), debug.traceback)
+
+		capturing[parents] = nil
 
 		if not ok then
 			error(result)
+		end
+
+		for parent in next, parents do
+			establishBonds(node, parent)
 		end
 	end
 
 	for child in node.children do
 		child.state = "dirty"
 	end
+
+	node.state = "clean"
 end
 
 local function updateIfNecessary<T>(node: Node<T>)
@@ -163,7 +185,7 @@ local function updateDescendants(sourceNode: Node<any>)
 			continue
 		end
 
-		for child in children do
+		for child in next, children do
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager ~= nil and true or false
 
