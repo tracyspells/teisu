@@ -1,10 +1,17 @@
-local flec = require(script.Parent.Parent.flec)
-local subscribe = require(script.Parent.Parent.subscribe)
-local effect = require(script.Parent.Parent.effect)
-local batch = require(script.Parent.Parent.batch)
+local teisu = require("../../lib/init")
 
-return function()
-	it("batches updates of one dependency", function()
+local flec = teisu.flec
+local batch = teisu.batch
+local subscribe = teisu.subscribe
+local effect = teisu.effect
+
+type CASE = (name: string) -> ()
+type CHECK = <T>(value: T) -> T
+
+return function(CASE: CASE, CHECK: CHECK)
+	do
+		CASE("batch updates of one dependency")
+
 		local source = flec(0)
 
 		local updates = 0
@@ -21,8 +28,8 @@ return function()
 			source(4)
 		end)
 
-		expect(updates).to.equal(1)
-		expect(result).to.equal(4)
+		CHECK(updates == 1)
+		CHECK(result == 4)
 
 		batch(function()
 			source(5)
@@ -30,13 +37,15 @@ return function()
 			source(7)
 		end)
 
-		expect(updates).to.equal(2)
-		expect(result).to.equal(7)
+		CHECK(updates == 2)
+		CHECK(result == 7)
 
 		unsubscribe()
-	end)
+	end
 
-	it("batches updates of multiple dependencies", function()
+	do
+		CASE("batch updates of multiple dependencies")
+
 		local a = flec(1)
 		local b = flec(1)
 		local c = flec(1)
@@ -62,10 +71,10 @@ return function()
 			a(5)
 		end)
 
-		expect(updates).to.equal(1)
-		expect(resultA).to.equal(5)
-		expect(resultB).to.equal(2)
-		expect(resultC).to.equal(4)
+		CHECK(updates == 1)
+		CHECK(resultA == 5)
+		CHECK(resultB == 2)
+		CHECK(resultC == 4)
 
 		batch(function()
 			a(5)
@@ -74,15 +83,17 @@ return function()
 			b(9)
 		end)
 
-		expect(updates).to.equal(2)
-		expect(resultA).to.equal(7)
-		expect(resultB).to.equal(9)
-		expect(resultC).to.equal(4)
+		CHECK(updates == 2)
+		CHECK(resultA == 7)
+		CHECK(resultB == 9)
+		CHECK(resultC == 4)
 
 		dispose()
-	end)
+	end
 
-	it("allows nested batching", function()
+	do
+		CASE("nested batching")
+
 		local a = flec(0)
 		local b = flec(0)
 		local c = flec(0)
@@ -116,13 +127,12 @@ return function()
 			c(3)
 		end)
 
-		expect(updates).to.equal(1)
-
-		expect(resultA).to.equal(2)
-		expect(resultB).to.equal(4)
-		expect(resultC).to.equal(3)
-		expect(resultD).to.equal(10)
+		CHECK(updates == 1)
+		CHECK(resultA == 2)
+		CHECK(resultB == 4)
+		CHECK(resultC == 3)
+		CHECK(resultD == 10)
 
 		dispose()
-	end)
+	end
 end
