@@ -50,10 +50,10 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(calls == 3)
 	end
 
-    do
-        CASE("y")
+	do
+		CASE("y")
 
-        --[[
+		--[[
 
                 a     b
                  ↘   ↙
@@ -62,7 +62,7 @@ return function(CASE: CASE, CHECK: CHECK)
                    d
         ]]
 
-        local a = flec(0)
+		local a = flec(0)
 		local b = flec(0)
 
 		local cCalls = 0
@@ -72,12 +72,12 @@ return function(CASE: CASE, CHECK: CHECK)
 			return a() * b()
 		end)
 
-        local dCalls = 0
-        local d = computed(function()
-            dCalls += 1
-            
-            return c() * 10
-        end)
+		local dCalls = 0
+		local d = computed(function()
+			dCalls += 1
+
+			return c() * 10
+		end)
 
 		CHECK(d() == 0)
 
@@ -97,8 +97,8 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(d() == 500)
 
 		CHECK(cCalls == 3)
-        CHECK(dCalls == 3) 
-    end
+		CHECK(dCalls == 3)
+	end
 
 	do
 		CASE("diamond")
@@ -112,51 +112,51 @@ return function(CASE: CASE, CHECK: CHECK)
                   d
         ]]
 
-        local a = flec(0)
-		
-        local bCalls = 0
-        local b = computed(function()
-            bCalls += 1
-            return a() * 2 
-        end)
+		local a = flec(0)
 
-        local cCalls = 0
-        local c = computed(function()
-            cCalls += 1
-            
-            return a() * 3
-        end)
+		local bCalls = 0
+		local b = computed(function()
+			bCalls += 1
+			return a() * 2
+		end)
 
-        local dCalls = 0
-        local d = computed(function()
-            dCalls += 1
-            return b() * c()
-        end)
+		local cCalls = 0
+		local c = computed(function()
+			cCalls += 1
 
-        CHECK(d() == 0)
+			return a() * 3
+		end)
 
-        a(1)
+		local dCalls = 0
+		local d = computed(function()
+			dCalls += 1
+			return b() * c()
+		end)
 
-        CHECK(b() == 2)
-        CHECK(c() == 3)
-        CHECK(d() == 6)
+		CHECK(d() == 0)
 
-        a(2)
+		a(1)
 
-        CHECK(b() == 4)
-        CHECK(c() == 6)
-        CHECK(d() == 24)
+		CHECK(b() == 2)
+		CHECK(c() == 3)
+		CHECK(d() == 6)
 
-        a(function(num)
-            return num * 3
-        end)
+		a(2)
 
-        CHECK(b() == 12)
-        CHECK(c() == 18)
-        CHECK(d() == 216)
+		CHECK(b() == 4)
+		CHECK(c() == 6)
+		CHECK(d() == 24)
 
-        CHECK(bCalls == 4)
-        CHECK(cCalls == 4)
-        CHECK(dCalls == 4)
+		a(function(num)
+			return num * 3
+		end)
+
+		CHECK(b() == 12)
+		CHECK(c() == 18)
+		CHECK(d() == 216)
+
+		CHECK(bCalls == 4)
+		CHECK(cCalls == 4)
+		CHECK(dCalls == 4)
 	end
 end

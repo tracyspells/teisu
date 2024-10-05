@@ -18,25 +18,25 @@ return function(CASE: CASE, CHECK: CHECK)
 			result = a()
 		end)
 
-        CHECK(result == 0)
+		CHECK(result == 0)
 
 		for index = 1, 3 do
 			a(index)
 
-            CHECK(result == index)
+			CHECK(result == index)
 		end
 
-        a(10)
-        CHECK(result == 10)
+		a(10)
+		CHECK(result == 10)
 
 		dispose()
 	end
 
-    do
+	do
 		CASE("rerun on multiple flec change")
 
 		local a = flec(0)
-        local b = flec(0)
+		local b = flec(0)
 
 		local result = 0
 
@@ -44,24 +44,24 @@ return function(CASE: CASE, CHECK: CHECK)
 			result = a() + b()
 		end)
 
-        CHECK(result == 0)
+		CHECK(result == 0)
 
 		for index = 1, 3 do
 			a(index)
 
-            CHECK(result == index)
+			CHECK(result == index)
 		end
 
-        for index = 1, 3 do
-           b(index)
+		for index = 1, 3 do
+			b(index)
 		end
 
-        CHECK(result == 6)
+		CHECK(result == 6)
 
-        a(10)
-        b(10)
+		a(10)
+		b(10)
 
-        CHECK(result == 20)
+		CHECK(result == 20)
 
 		dispose()
 	end
@@ -81,23 +81,23 @@ return function(CASE: CASE, CHECK: CHECK)
 			end
 		end)
 
-        CHECK(cleanups == 0)
+		CHECK(cleanups == 0)
 		a(1)
-        CHECK(cleanups == 1)
+		CHECK(cleanups == 1)
 		dispose()
-        CHECK(cleanups == 2)
+		CHECK(cleanups == 2)
 	end
 
-    do
-        CASE("effect self-cleanup")
+	do
+		CASE("effect self-cleanup")
 
-        local a = flec(0)
+		local a = flec(0)
 		local disposed = false
 		local dispose
 
 		dispose = effect(function()
 			if dispose then
-                CHECK(not disposed)
+				CHECK(not disposed)
 				dispose()
 				disposed = true
 			end
@@ -107,12 +107,12 @@ return function(CASE: CASE, CHECK: CHECK)
 
 		a(2)
 		a(3)
-    end
+	end
 
-    do
-        CASE("effect lifecycles")
+	do
+		CASE("effect lifecycles")
 
-        local mounted = false
+		local mounted = false
 		local disposed = false
 
 		local dispose = effect(function()
@@ -123,10 +123,10 @@ return function(CASE: CASE, CHECK: CHECK)
 			end
 		end)
 
-        CHECK(mounted == true)
+		CHECK(mounted == true)
 		dispose()
-        CHECK(disposed == true)
-    end
+		CHECK(disposed == true)
+	end
 
 	do
 		CASE("conditional dependencies")
@@ -147,14 +147,14 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(current == 1)
 
 		condition(true)
-        
+
 		CHECK(reruns == 2)
 		CHECK(current == 0)
 
 		a(1)
 		b(2)
 
-        CHECK(reruns == 3)
+		CHECK(reruns == 3)
 		CHECK(current == 1)
 
 		condition(false)
