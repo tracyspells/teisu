@@ -13,7 +13,11 @@ local mapped = require(script.mapped)
 local batch = require(script.batch)
 
 export type Flec<T> = types.Flec<T>
+export type flec<T> = Flec<T>
 export type Molecule<T> = types.Molecule<T>
+export type molecule<T> = Molecule<T>
+export type Derivable<T> = types.UsedAs<T>
+export type derivable<T> = Derivable<T>
 
 return table.freeze({
 	flec = flec,

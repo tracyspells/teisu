@@ -1,17 +1,13 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local types = require(script.Parent.types)
-local graph = require(script.Parent.graph)
-local flags = require(script.Parent.flags)
+local types = require("./types")
+local graph = require("./graph")
+local flags = require("./flags")
 
 type Set<T> = types.Set<T>
 
 type Node = types.Node<any>
 
 local updateDescendants = graph.updateDescendants
-local capturing = graph.capturing
+local batched = graph.batched
 
 --[=[
 	Runs the given callback and schedules listeners to be notified
@@ -25,25 +21,20 @@ local function batch(callback: () -> ())
 		return callback()
 	end
 
-	local key = "___batch"
-	local dependencies: Set<Node> = { [key :: any] = true }
-	local dependency: Node? = nil
-
-	capturing[dependencies] = true
 	flags.batching = true
 
-	local ok, message: string? = pcall(callback)
-
+	local ok, message: string? = xpcall(callback, debug.traceback)
+	
 	flags.batching = false
 
-	capturing[dependencies] = nil
-	dependencies[key :: any] = nil
-
 	if not ok then
+		table.clear(batched)
 		error(`error occured while batching updates: \n{message}`)
 	end
 
-	for node in next, dependencies do
+	local dependency: Node? = nil
+
+	for node in next, batched do
 		local isSourceNode = node.eager == nil and node.effect == false
 
 		node.isPartOfBatch = nil
@@ -57,7 +48,7 @@ local function batch(callback: () -> ())
 	-- this solves the issue of computeds/effects having more than one dependency
 	-- being updated each time after a batch call completes
 	if dependency ~= nil then
-		table.clear(dependencies)
+		table.clear(batched)
 		updateDescendants(dependency)
 	end
 end

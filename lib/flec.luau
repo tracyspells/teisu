@@ -1,9 +1,5 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local graph = require(script.Parent.graph)
-local types = require(script.Parent.types)
+local types = require("./types")
+local graph = require("./graph")
 
 type Flec<T> = types.Flec<T>
 type Transformer<T> = (old: T) -> T
@@ -14,8 +10,6 @@ type Options<T> = {
 local createNode = graph.createSourceNode
 local updateDescendants = graph.updateDescendants
 local capturing = graph.capturing
-
-local NODE_KEY = graph.NODE_KEY
 
 --[=[
 	Creates a new flec with the given state.
@@ -30,8 +24,8 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 
 	local function flec(...: any)
 		if select("#", ...) == 0 then
-			for set in next, capturing do
-				set[node] = true
+			if capturing.index > 0 then
+				capturing.stack[capturing.index][node] = true
 			end
 
 			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
@@ -39,7 +33,7 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 
 		local target = ...
 
-		if target == NODE_KEY then
+		if target == graph.NODE_KEY then
 			return node :: any
 		end
 

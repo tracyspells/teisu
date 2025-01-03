@@ -1,9 +1,5 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local types = require(script.Parent.types)
-local computed = require(script.Parent.computed)
+local types = require("./types")
+local computed = require("./computed")
 
 type Map<K, V> = types.Map<K, V>
 

@@ -1,9 +1,5 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local graph = require(script.Parent.graph)
-local types = require(script.Parent.types)
+local types = require("./types")
+local graph = require("./graph")
 
 type Set<T> = types.Set<T>
 
@@ -17,9 +13,7 @@ type Options<T> = {
 local evaluate = graph.evaluate
 local createNode = graph.createDerivedNode
 local capturing = graph.capturing
-
-local NODE_KEY = graph.NODE_KEY
-
+ 
 local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil
 
@@ -35,8 +29,8 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 
 	return function(...: any)
 		if select("#", ...) == 0 then
-			for set in next, capturing do
-				set[node] = true
+			if capturing.index > 0 then
+				capturing.stack[capturing.index][node] = true
 			end
 
 			evaluate(node)
@@ -46,7 +40,7 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 
 		local argument = ...
 
-		if argument == NODE_KEY then
+		if argument == graph.NODE_KEY then
 			return node :: any
 		end
 

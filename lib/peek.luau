@@ -1,25 +1,28 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local graph = require(script.Parent.graph)
-local types = require(script.Parent.types)
+local types = require("./types")
+local graph = require("./graph")
 
 type UsedAs<T> = types.UsedAs<T>
 
-local castToNode = graph.castToReactable
-local evaluate = graph.evaluate
+local capturing = graph.capturing
 
 local function peek<T>(target: UsedAs<T>): T
-	local node = castToNode(target)
-
-	if node ~= nil then
-		evaluate(node)
-
-		return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+	if typeof(target)  ~= "function"  then
+		return target :: T
 	end
 
-	return target :: T
+	if capturing.index == 0 then
+		return target()
+	end
+
+	capturing.index += 1
+	capturing.stack[capturing.index] = {}
+
+	local result = target()
+	
+	capturing.stack[capturing.index] = nil
+	capturing.index -= 1
+
+	return result
 end
 
 return peek

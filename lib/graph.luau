@@ -1,9 +1,5 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local types = require(script.Parent.types)
-local flags = require(script.Parent.flags)
+local types = require("./types")
+local flags = require("./flags")
 
 type Map<K, V> = types.Map<K, V>
 type Array<T> = types.Array<T>
@@ -13,7 +9,12 @@ type Node<T> = types.Node<T>
 type NodeState = types.NodeState
 type NodeNonCleanState = types.NodeNonCleanState
 
-local capturing: Set<Set<Node<any>>> = {}
+local batched: Set<Node<any>> = {}
+
+local capturing = {
+	stack = {} :: { Set<Node<any>> },
+	index = 0,
+}
 
 local NODE_KEY = newproxy()
 
@@ -75,14 +76,7 @@ local function castToReactable<T>(target: T): Node<T>?
 		return nil
 	end
 
-	local fn: (...any) -> Node<T> = target
-	local targetNode = castToNode(fn(NODE_KEY))
-
-	if targetNode == nil then
-		return nil
-	end
-
-	return targetNode :: any
+	return castToNode((target :: (...any) -> Node<T>)(NODE_KEY)) :: any
 end
 
 local function isSourceNode(value: any): (boolean, Node<any>?)
@@ -105,11 +99,14 @@ local function update<T>(node: Node<T>)
 	local effect = node.effect :: (() -> ()) | boolean
 	if effect ~= false then
 		local parents: Set<Node<any>> = {}
-		capturing[parents] = {}
+
+		capturing.index += 1
+		capturing.stack[capturing.index] = parents
 
 		local ok, message: string? = xpcall(effect :: () -> (), debug.traceback)
 
-		capturing[parents] = nil
+		capturing.stack[capturing.index] = nil
+		capturing.index -= 1
 
 		if not ok then
 			error(message)
@@ -148,16 +145,8 @@ end
 local function updateDescendants(sourceNode: Node<any>)
 	if flags.batching then
 		if not sourceNode.isPartOfBatch then
-			for set in next, capturing do
-				local batched = set["___batch" :: any]
-
-				if batched == nil then
-					continue
-				end
-
-				set[sourceNode] = true
-				sourceNode.isPartOfBatch = true
-			end
+			batched[sourceNode] = true
+			sourceNode.isPartOfBatch = true
 		end
 
 		return
@@ -195,8 +184,6 @@ local function updateDescendants(sourceNode: Node<any>)
 		end
 	end
 
-	table.clear(eagerNodesSeen)
-
 	for _, node in next, eagerNodes do
 		updateIfNecessary(node)
 	end
@@ -205,6 +192,7 @@ end
 return table.freeze({
 	NODE_KEY = NODE_KEY,
 	capturing = capturing,
+	batched = batched,
 
 	createSourceNode = createSourceNode,
 	isSourceNode = isSourceNode,

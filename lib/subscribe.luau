@@ -1,9 +1,5 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
-local types = require(script.Parent.types)
-local effect = require(script.Parent.effect)
+local types = require("./types")
+local effect = require("./effect")
 
 type Molecule<T> = types.Molecule<T>
 
@@ -19,10 +15,8 @@ local function subscribe<T>(molecule: Molecule<T>, listener: Listener<T>): Clean
 		local new = molecule()
 
 		old = if old == nil then new else old
-
-		local the_same = new == old
-
-		if not the_same then
+		
+		if new ~= old then
 			local temp = old :: T
 			old = new
 
@@ -30,7 +24,10 @@ local function subscribe<T>(molecule: Molecule<T>, listener: Listener<T>): Clean
 		end
 	end)
 
-	return dispose
+	return function()
+		dispose()
+		old = nil
+	end
 end
 
 return subscribe
