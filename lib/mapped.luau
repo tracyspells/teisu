@@ -1,8 +1,8 @@
 local types = require("./types")
-local computed = require("./computed")
+local flec = require("./flec")
+local effect = require("./effect")
 
 type Map<K, V> = types.Map<K, V>
-
 type Molecule<T> = types.Molecule<T>
 
 type MappedConstructor =
@@ -10,45 +10,58 @@ type MappedConstructor =
 	& (<K0, V0, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> V1?) -> Molecule<{ [K0]: V1 }>)
 	& (<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Molecule<{ [K1]: V1 }>)
 
---[=[
-	Maps each entry in a molecule's state to a new key-value pair. If the `mapper`
-	function returns `undefined`, the entry is omitted from the resulting map.
-	When the molecule changes, the `mapper` is called for each entry in the state
-	to compute the new state.
-	
-	@param subject The molecule to observe.
-	@param mapper The function that maps each entry.
-	@return A new read-only molecule with the mapped state.
-]=]
 local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
-	local old: Map<any, any>
+	local output = flec({})
+	local ref = setmetatable({ current = output }, { __mode = "v" })
 
-	return computed(function()
-		local items = molecule()
+	local cache: Map<any, any> = {}
+	local remove_queue: { any } = {}
 
-		local new: { [K1]: V1 } = {}
+	local dispose
+	dispose = effect(function()
+		if not ref.current then
+			local function cleanup()
+				table.clear(cache)
+				table.clear(remove_queue)
 
-		old = if old == nil then {} else old
-
-		for key, value in next, items do
-			local newValue, newKey = mapper(value, key)
-
-			local K1 = (if newKey == nil then key else newKey) :: K1
-
-			local V1 = (if newValue == nil then value else newValue) :: V1
-			local oldV1 = old[K1]
-
-			if oldV1 ~= nil and oldV1 == V1 then
-				V1 = oldV1
+				dispose()
 			end
 
-			new[K1] = V1
+			return cleanup()
 		end
 
-		old = new
+		local data = molecule()
 
-		return new
+		-- removed queued values
+		for _, key in next, remove_queue do
+			if data[key] ~= nil then
+				continue
+			end
+			cache[key] = nil
+		end
+
+		table.clear(remove_queue)
+
+		-- process new or changed values
+		for key, value in next, data do
+			local newValue, newKey = mapper(value, key)
+			local v, k = newValue or value, newKey or key
+
+			if cache[k] ~= v then
+				cache[k] = v
+			end
+		end
+
+		output(table.clone(cache))
+
+		return function()
+			for key in next, cache do
+				table.insert(remove_queue, key)
+			end
+		end
 	end)
+
+	return output
 end
 
 return mapped :: MappedConstructor

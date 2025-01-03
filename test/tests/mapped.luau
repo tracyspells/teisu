@@ -79,27 +79,29 @@ return function(CASE: CASE, CHECK: CHECK)
 		end)
 
 		for key = 1, 3 do
-			local a = map()[key]
-			local b = items()[key]
-
+			local a, b = map()[key], items()[key]
 			CHECK(a == b)
 		end
 
 		local previous = map()
-		local previousItems = items()
 
-		items({ previousItems[1], previousItems[3] })
+		items(function(old)
+			local new = table.clone(old)
+			new[2] = new[3]
+			new[3] = nil
 
-		local result = map()
-		local other = items()
+			return new
+		end)
 
-		CHECK(result[1] == previous[1])
-		CHECK(result[1] == other[1])
+		local new = map()
+		local current = items()
 
-		CHECK(result[2] == nil)
-
-		CHECK(result[3] == previous[3])
-		CHECK(result[3] == other[2])
+		CHECK(new[1] == previous[1])
+		CHECK(new[1] == current[1])
+		CHECK(new[2] == previous[2])
+		CHECK(new[2] ~= current[2])
+		CHECK(new[3] == previous[3])
+		CHECK(new[3] ~= current[3])
 	end
 
 	do
@@ -133,16 +135,19 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(added == 3)
 		CHECK(deleted == 0)
 
-		local previous = items()
-		items({ previous[1], previous[3] })
-		
+		items(function(old)
+			local new = table.clone(old)
+			new[2] = nil
+
+			return new
+		end)
+
 		CHECK(added == 3)
 		CHECK(deleted == 1)
 
 		items({})
 
-		CHECK(added == 3)
-		CHECK(deleted == 3)
+		CHECK(added == deleted)
 
 		stopObserving()
 	end
