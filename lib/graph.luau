@@ -152,20 +152,14 @@ local function updateDescendants(sourceNode: Node<any>)
 		return
 	end
 
-	local queue: Array<Set<Node<any>>> = {}
+	local queue: Array<Set<Node<any>>> = { sourceNode.children }
 
 	local eagerNodes: Array<Node<any>> = {}
-	local eagerNodesSeen: Array<number> = {}
+	local eagerNodesSeen: Map<Node<any>, number> = {}
 
-	table.insert(queue, sourceNode.children)
+	local children = table.remove(queue, 1)
 
-	while #queue > 0 do
-		local children = table.remove(queue, 1)
-
-		if children == nil then
-			continue
-		end
-
+	while children ~= nil do
 		for child in next, children do
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager ~= nil and true or false
@@ -173,18 +167,20 @@ local function updateDescendants(sourceNode: Node<any>)
 
 			child.state = if isDirectChild then "dirty" else "check"
 
-			if isChildEager and table.find(eagerNodesSeen, child.createdAt) == nil then
+			if isChildEager and eagerNodesSeen[child] == nil then
 				table.insert(eagerNodes, child)
-				table.insert(eagerNodesSeen, child.createdAt)
+				eagerNodesSeen[child] = child.createdAt
 			end
 
 			if not isEmpty then
 				table.insert(queue, child.children)
 			end
 		end
+
+		children = table.remove(queue, 1)
 	end
 
-	for _, node in next, eagerNodes do
+	for _, node in ipairs(eagerNodes) do
 		updateIfNecessary(node)
 	end
 end
