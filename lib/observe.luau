@@ -14,15 +14,6 @@ type Cleanup = () -> ()
 
 local function noop() end
 
---[=[
-	Creates an instance of `factory` for each item in a molecule's state, and
-	cleans up the instance when the item is removed. Returns a cleanup function
-	that disconnects from all instances.
-	
-	@param subject The molecule to observe.
-	@param factory The function that tracks the lifecycle of each item.
-	@return A function that disconnects from all instances.
-]=]
 local function observe<K, V>(subject: TableMolecule<K, V>, factory: Factory<K, V>): Cleanup
 	local connections: { [K]: Cleanup } = {}
 
@@ -36,7 +27,9 @@ local function observe<K, V>(subject: TableMolecule<K, V>, factory: Factory<K, V
 
 		for key, value in next, new do
 			if not connections[key] then
-				connections[key] = factory(value, key) or noop
+				connections[key] = peek(function()
+					return factory(value, key) or noop
+				end)
 			end
 		end
 	end)
@@ -46,7 +39,9 @@ local function observe<K, V>(subject: TableMolecule<K, V>, factory: Factory<K, V
 	if result ~= nil then
 		for key, value in next, result do
 			if not connections[key] then
-				connections[key] = factory(value, key) or noop
+				connections[key] = peek(function()
+					return factory(value, key) or noop
+				end)
 			end
 		end
 	end

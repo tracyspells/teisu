@@ -11,13 +11,6 @@ local createNode = graph.createSourceNode
 local updateDescendants = graph.updateDescendants
 local capturing = graph.capturing
 
---[=[
-	Creates a new flec with the given state.
-	
-	@param initial_value The initial state.
-	@param options Optional configuration.
-	@return A new flec.
-]=]
 local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 	local node = createNode(initial_value)
 	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil

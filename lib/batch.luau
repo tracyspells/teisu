@@ -9,14 +9,7 @@ type Node = types.Node<any>
 local updateDescendants = graph.updateDescendants
 local batched = graph.batched
 
---[=[
-	Runs the given callback and schedules listeners to be notified
-	only once after the callback has completed. Useful for batching 
-	multiple flec changes.
-
-	@param callback The function to run.
-]=]
-local function batch(callback: () -> ())
+return function(callback: () -> ())
 	if flags.batching then
 		return callback()
 	end
@@ -27,14 +20,16 @@ local function batch(callback: () -> ())
 
 	flags.batching = false
 
+	local results = table.clone(batched)
+	table.clear(batched)
+
 	if not ok then
-		table.clear(batched)
 		error(`error occured while batching updates: \n{message}`)
 	end
 
 	local dependency: Node? = nil
 
-	for node in next, batched do
+	for node in next, results do
 		local isSourceNode = node.eager == nil and node.effect == false
 
 		node.isPartOfBatch = nil
@@ -48,9 +43,6 @@ local function batch(callback: () -> ())
 	-- this solves the issue of computeds/effects having more than one dependency
 	-- being updated each time after a batch call completes
 	if dependency ~= nil then
-		table.clear(batched)
 		updateDescendants(dependency)
 	end
 end
-
-return batch
