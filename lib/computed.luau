@@ -13,7 +13,7 @@ type Options<T> = {
 local evaluate = graph.evaluate
 local createNode = graph.createDerivedNode
 local capturing = graph.capturing
- 
+
 local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil
 

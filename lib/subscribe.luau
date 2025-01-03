@@ -15,7 +15,7 @@ local function subscribe<T>(molecule: Molecule<T>, listener: Listener<T>): Clean
 		local new = molecule()
 
 		old = if old == nil then new else old
-		
+
 		if new ~= old then
 			local temp = old :: T
 			old = new

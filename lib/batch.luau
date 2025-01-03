@@ -24,7 +24,7 @@ local function batch(callback: () -> ())
 	flags.batching = true
 
 	local ok, message: string? = xpcall(callback, debug.traceback)
-	
+
 	flags.batching = false
 
 	if not ok then
