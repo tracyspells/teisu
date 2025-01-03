@@ -9,10 +9,10 @@ type TableMolecule<K, V> = Molecule<Map<K, V>>
 
 type UsedAs<T> = types.UsedAs<T>
 
-type Factory<K, V> = (value: V, key: K) -> ( () -> () )?
+type Factory<K, V> = (value: V, key: K) -> (() -> ())?
 type Cleanup = () -> ()
 
-local function noop() end 
+local function noop() end
 
 --[=[
 	Creates an instance of `factory` for each item in a molecule's state, and
@@ -50,7 +50,7 @@ local function observe<K, V>(subject: TableMolecule<K, V>, factory: Factory<K, V
 			end
 		end
 	end
-	
+
 	return function()
 		for _, disconnect in next, connections do
 			disconnect()
