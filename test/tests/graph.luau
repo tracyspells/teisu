@@ -1,4 +1,5 @@
 local teisu = require("../../lib/init")
+local types = require("../types")
 --local count = require("../utils/count")
 
 local flec = teisu.flec
@@ -6,8 +7,8 @@ local computed = teisu.computed
 
 --local castToNode = graph.castToReactable
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
+type CASE = types.CASE
+type CHECK = types.CHECK
 
 return function(CASE: CASE, CHECK: CHECK)
 	do

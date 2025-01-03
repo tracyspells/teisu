@@ -4,10 +4,8 @@
 
 	@param amount number
 ]=]
-local function collect(amount: number?)
+return function(amount: number?)
 	for _ = 1, (amount or 3) do
 		(collectgarbage :: any)("collect")
 	end
 end
-
-return collect

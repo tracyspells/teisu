@@ -1,4 +1,5 @@
 local teisu = require("../../lib/init")
+local types = require("../types")
 local count = require("../utils/count")
 
 local flec = teisu.flec
@@ -6,8 +7,8 @@ local observe = teisu.observe
 local mapped = teisu.mapped
 local subscribe = teisu.subscribe
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
+type CASE = types.CASE
+type CHECK = types.CHECK
 
 return function(CASE: CASE, CHECK: CHECK)
 	do
@@ -104,6 +105,8 @@ return function(CASE: CASE, CHECK: CHECK)
 	do
 		CASE("observe() support")
 
+		local added, deleted = 0, 0
+
 		local items = flec({
 			{ key = 1, value = "a" },
 			{ key = 2, value = "b" },
@@ -113,9 +116,6 @@ return function(CASE: CASE, CHECK: CHECK)
 		local map = mapped(items, function(item)
 			return item, item.key
 		end)
-
-		local added = 0
-		local deleted = 0
 
 		local stopObserving = observe(map, function(item, key)
 			local original = items()[key]
@@ -135,7 +135,7 @@ return function(CASE: CASE, CHECK: CHECK)
 
 		local previous = items()
 		items({ previous[1], previous[3] })
-
+		
 		CHECK(added == 3)
 		CHECK(deleted == 1)
 

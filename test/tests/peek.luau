@@ -1,6 +1,7 @@
 local teisu = require("../../lib/init")
 local graph = require("../../lib/graph")
 local count = require("../utils/count")
+local types = require("../types")
 
 local flec = teisu.flec
 local peek = teisu.peek
@@ -8,10 +9,8 @@ local computed = teisu.computed
 
 local castToNode = graph.castToReactable
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
-
-local function noop() end
+type CASE = types.CASE
+type CHECK = types.CHECK
 
 return function(CASE: CASE, CHECK: CHECK)
 	do
@@ -63,6 +62,6 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(peek("hi") == "hi")
 		CHECK(peek(1) == 1)
 		CHECK(peek(false) == false)
-		CHECK(peek(noop) == noop)
+		CHECK(peek(function() return 1 end) == 1)
 	end
 end

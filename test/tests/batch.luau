@@ -1,12 +1,13 @@
 local teisu = require("../../lib/init")
+local types = require("../types")
 
 local flec = teisu.flec
 local batch = teisu.batch
 local subscribe = teisu.subscribe
 local effect = teisu.effect
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
+type CASE = types.CASE
+type CHECK = types.CHECK
 
 return function(CASE: CASE, CHECK: CHECK)
 	do

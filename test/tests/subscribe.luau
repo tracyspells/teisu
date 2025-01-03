@@ -1,10 +1,11 @@
 local teisu = require("../../lib/init")
+local types = require("../types")
 
 local flec = teisu.flec
 local subscribe = teisu.subscribe
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
+type CASE = types.CASE
+type CHECK = types.CHECK
 
 return function(CASE: CASE, CHECK: CHECK)
 	do
@@ -78,8 +79,7 @@ return function(CASE: CASE, CHECK: CHECK)
 		local newState, oldState
 
 		local unsubscribe = subscribe(counter, function(new, old)
-			newState = new
-			oldState = old
+			newState, oldState = new, old
 		end)
 
 		counter(1)

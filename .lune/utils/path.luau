@@ -1,5 +1,3 @@
-local function path(...: string)
+return function (...: string)
 	return table.concat({ ... }, "/")
 end
-
-return path

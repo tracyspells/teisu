@@ -4,12 +4,10 @@
 	@param object The table to count.
 	@return The number of elements in the table.
 ]=]
-local function count(object: {}): number
+return function(object: {}): number
 	local count = 0
 	for _ in next, object do
 		count += 1
 	end
 	return count
 end
-
-return count

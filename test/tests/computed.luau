@@ -1,14 +1,11 @@
 local teisu = require("../../lib/init")
---local graph = require("../../lib/graph")
---local count = require("../utils/count")
---local collect = require("../utils/collect")
+local types = require("../types")
 
 local flec = teisu.flec
 local computed = teisu.computed
---local castToNode = graph.castToReactable
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
+type CASE = types.CASE
+type CHECK = types.CHECK
 
 return function(CASE: CASE, CHECK: CHECK)
 	do
@@ -105,39 +102,4 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(reruns == 4)
 		CHECK(current == 2)
 	end
-
-	-- do
-	-- 	CASE("garbage collection")
-
-	-- 	local source = flec(0)
-	-- 	local node = castToNode(source)
-
-	-- 	computed(function()
-	-- 		return source()
-	-- 	end)()
-
-	-- 	collect()
-
-	-- 	if node ~= nil then
-	-- 		CHECK(count(node.children) == 0)
-	-- 	end
-
-	-- 	node = castToNode(source)
-
-	-- 	do
-	-- 		local double = computed(function()
-	-- 			return source() * 2
-	-- 		end)
-
-	-- 		computed(function()
-	-- 			return double() * 2
-	-- 		end)()
-	-- 	end
-
-	-- 	collect()
-
-	-- 	if node ~= nil then
-	-- 		CHECK(count(node.children) == 0)
-	-- 	end
-	-- end
 end

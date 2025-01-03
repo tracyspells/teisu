@@ -10,7 +10,7 @@ type CHECK = <T>(value: T) -> T
 
 type TEST_FN = (CASE, CHECK) -> ()
 
-type TEST_MAP = Map<string, TEST_FN>
+type TESTS = { {name: string, fn: TEST_FN } }
 
 local readDir = fs.readDir
 local isFile = fs.isFile
@@ -25,7 +25,7 @@ local function TITLE(name: string)
     print()
 end
 
-local tests: TEST_MAP = {} do
+local tests: TESTS = {} do
     for _, entry in next, readDir(DIRECTORY) do
         local filePath = `{DIRECTORY}/{entry}`
         local testName = string.gsub(entry, ".luau", "")
@@ -33,17 +33,19 @@ local tests: TEST_MAP = {} do
         if not isFile(filePath) then
             continue
         end
-
-        tests[testName] = require(filePath) :: TEST_FN
+        
+        table.insert(tests, { name = testName, fn = require(filePath) :: TEST_FN})
     end
+
+    table.sort(tests, function(a, b)
+        return string.upper(a.name) < string.upper(b.name)
+    end)
 end
 
 TITLE "RESULTS:"
 
-for name, callback in next, tests do
-    TEST(name, function()
-        callback(CASE, CHECK)
-    end)
+for _, test in tests do
+    TEST(test.name, function() test.fn(CASE, CHECK) end)
 end
 
 FINISH()
