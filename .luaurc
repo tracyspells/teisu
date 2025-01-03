@@ -1,3 +1,8 @@
 {
-    "languageMode": "strict"
+    "languageMode": "strict",
+    "lint": { "BuiltinGlobalWrite": false, "UnknownGlobal": false },
+    "globals": [ "Instance" ],
+    "aliases": {
+        "lune": "~/.lune/.typedefs/0.8.9/"
+    }
 }
