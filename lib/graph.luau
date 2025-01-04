@@ -104,7 +104,7 @@ local function update<T>(node: Node<T>)
 
 		capturing.n = index - 1
 		capturing[index] = nil
-		
+
 		if not ok then
 			error(message)
 		end
