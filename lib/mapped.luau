@@ -18,15 +18,14 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 	local remove_queue: { any } = {}
 
 	local dispose
+	local cleanup = function()
+		table.clear(cache)
+		table.clear(remove_queue)
+		dispose()
+	end
+
 	dispose = effect(function()
 		if not ref.current then
-			local function cleanup()
-				table.clear(cache)
-				table.clear(remove_queue)
-
-				dispose()
-			end
-
 			return cleanup()
 		end
 
