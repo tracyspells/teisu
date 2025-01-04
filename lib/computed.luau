@@ -29,8 +29,8 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 
 	return function(...: any)
 		if select("#", ...) == 0 then
-			if capturing.index > 0 then
-				capturing.stack[capturing.index][node] = true
+			if capturing.n > 0 then
+				capturing[capturing.n][node] = true
 			end
 
 			evaluate(node)

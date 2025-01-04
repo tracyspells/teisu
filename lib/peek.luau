@@ -10,17 +10,18 @@ local function peek<T>(target: UsedAs<T>): T
 		return target :: T
 	end
 
-	if capturing.index == 0 then
+	if capturing.n == 0 then
 		return target()
 	end
 
-	capturing.index += 1
-	capturing.stack[capturing.index] = {}
+	local index = capturing.n + 1
+	capturing.n = index
+	capturing[index] = {}
 
 	local result = target()
 
-	capturing.stack[capturing.index] = nil
-	capturing.index -= 1
+	capturing.n = index - 1
+	capturing[index] = nil
 
 	return result
 end

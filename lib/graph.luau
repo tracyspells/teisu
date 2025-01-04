@@ -10,11 +10,7 @@ type NodeState = types.NodeState
 type NodeNonCleanState = types.NodeNonCleanState
 
 local batched: Set<Node<any>> = {}
-
-local capturing = {
-	stack = {} :: { Set<Node<any>> },
-	index = 0,
-}
+local capturing = { n = 0 } :: { [number]: Set<Node<any>>, n: number }
 
 local NODE_KEY = newproxy()
 
@@ -100,14 +96,15 @@ local function update<T>(node: Node<T>)
 	if effect ~= false then
 		local parents: Set<Node<any>> = {}
 
-		capturing.index += 1
-		capturing.stack[capturing.index] = parents
+		local index = capturing.n + 1
+		capturing.n = index
+		capturing[index] = parents
 
 		local ok, message: string? = xpcall(effect :: () -> (), debug.traceback)
 
-		capturing.stack[capturing.index] = nil
-		capturing.index -= 1
-
+		capturing.n = index - 1
+		capturing[index] = nil
+		
 		if not ok then
 			error(message)
 		end

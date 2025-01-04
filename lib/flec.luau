@@ -17,8 +17,8 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 
 	local function flec(...: any)
 		if select("#", ...) == 0 then
-			if capturing.index > 0 then
-				capturing.stack[capturing.index][node] = true
+			if capturing.n > 0 then
+				capturing[capturing.n][node] = true
 			end
 
 			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
