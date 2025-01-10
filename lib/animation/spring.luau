@@ -330,8 +330,8 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 					end
 				elseif state.valueCount > oldValueCount then
 					for i = oldValueCount + 1, state.valueCount do
-						table.insert(state.pos, data[i])
-						table.insert(state.vel, data[i])
+						table.insert(state.pos, 0)
+						table.insert(state.vel, 0)
 					end
 				end
 			end
