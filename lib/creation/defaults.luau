@@ -97,18 +97,18 @@ return table.freeze {
 	},
 
 	UIListLayout = table.freeze {
-        SortOrder = Enum.SortOrder.LayoutOrder
-    },
-   
-    UIGridLayout = table.freeze {
-        SortOrder = Enum.SortOrder.LayoutOrder
-    },
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	},
 
-    UITableLayout = table.freeze {
-        SortOrder = Enum.SortOrder.LayoutOrder
-    },
+	UIGridLayout = table.freeze {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	},
 
-    UIPageLayout = table.freeze {
-        SortOrder = Enum.SortOrder.LayoutOrder
-    },
+	UITableLayout = table.freeze {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	},
+
+	UIPageLayout = table.freeze {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	},
 }

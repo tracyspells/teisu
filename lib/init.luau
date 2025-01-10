@@ -44,7 +44,9 @@ end
 
 local function apply(instance: Instance)
 	return function(props: { [any]: any })
-		local unroot = root(function() _apply(instance, props) end)
+		local unroot = root(function()
+			_apply(instance, props)
+		end)
 		instance.Destroying:Once(unroot)
 		return instance
 	end
@@ -54,7 +56,7 @@ stepped = is_game and game:GetService("RunService").Heartbeat:Connect(function(d
 	on_step(deltaTime)
 end)
 
-return table.freeze({
+return table.freeze {
 
 	-- ui
 	new = new,
@@ -63,7 +65,7 @@ return table.freeze({
 	root = root,
 	mount = mount,
 	apply = apply,
-	
+
 	-- state management
 	flec = flec,
 	computed = computed,
@@ -95,5 +97,5 @@ return table.freeze({
 		end
 
 		on_step(deltaTime)
-	end
-})
+	end,
+}

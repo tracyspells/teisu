@@ -27,11 +27,11 @@ export type Node<T> = {
 export type Molecule<T> = () -> T
 export type Flec<T> = (() -> T) & ((value: T | ((T) -> T)) -> T)
 
-export type Spring<T> = ( Molecule<T> ) & {
+export type Spring<T> = Molecule<T> & {
 	impulse: (self: Spring<T>, delta: T) -> (),
 	setPosition: (self: Spring<T>, newValue: T) -> (),
 	setVelocity: (self: Spring<T>, newValue: T) -> (),
-	onComplete: (callback: (value: T) -> ()) -> Cleanup
+	onComplete: (callback: (value: T) -> ()) -> Cleanup,
 }
 
 export type UsedAs<T> = Molecule<T> | T
