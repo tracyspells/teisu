@@ -1,8 +1,37 @@
 {
-    "languageMode": "strict",
-    "lint": { "BuiltinGlobalWrite": false, "UnknownGlobal": false },
-    "globals": [ "Instance" ],
-    "aliases": {
-        "lune": "~/.lune/.typedefs/0.8.9/"
-    }
+  "aliases": {
+    "action": "lib/action",
+    "animation": "lib/animation",
+    "apply": "lib/creation/apply",
+    "batch": "lib/batch",
+    "cleanup": "lib/creation/cleanup",
+    "computed": "lib/computed",
+    "convert": "lib/animation/convert",
+    "creation": "lib/creation",
+    "defaults": "lib/creation/defaults",
+    "effect": "lib/effect",
+    "flags": "lib/flags",
+    "flec": "lib/flec",
+    "graph": "lib/graph",
+    "lab": "lib/lab",
+    "lune": "~/.lune/.typedefs/0.8.9/",
+    "mapped": "lib/mapped",
+    "mock": "test/mock",
+    "observe": "lib/observe",
+    "peek": "lib/peek",
+    "spring": "lib/animation/spring",
+    "subscribe": "lib/subscribe",
+    "teisu": "lib",
+    "test-types": "test/types",
+    "testkit": "test/testkit",
+    "types": "lib/types"
+  },
+  "globals": [
+    "Instance"
+  ],
+  "languageMode": "strict",
+  "lint": {
+    "BuiltinGlobalWrite": false,
+    "UnknownGlobal": false
+  }
 }

@@ -8,5 +8,9 @@ sourcemap.json
 
 Packages
 DevPackages
+ServerPackages
 
-/scripts/roblox.d.luau
+roblox.yml
+roblox.toml
+
+dist/
