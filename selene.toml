@@ -1,4 +1,5 @@
-std = "roblox+luau"
+std = "selene-std+luau"
+exclude = ["dist/**"]
 
 [lints]
 global_usage = "allow"

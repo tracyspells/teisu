@@ -1,0 +1,48 @@
+{
+  "generator": "retain_lines",
+  "rules": [
+    {
+      "current": {
+        "module_folder_name": "init",
+        "name": "path",
+        "sources": {
+          "@action": "lib/action",
+          "@animation": "lib/animation",
+          "@apply": "lib/creation/apply",
+          "@batch": "lib/batch",
+          "@cleanup": "lib/creation/cleanup",
+          "@computed": "lib/computed",
+          "@convert": "lib/animation/convert",
+          "@creation": "lib/creation",
+          "@defaults": "lib/creation/defaults",
+          "@effect": "lib/effect",
+          "@flags": "lib/flags",
+          "@flec": "lib/flec",
+          "@graph": "lib/graph",
+          "@lab": "lib/lab",
+          "@mapped": "lib/mapped",
+          "@observe": "lib/observe",
+          "@peek": "lib/peek",
+          "@spring": "lib/animation/spring",
+          "@subscribe": "lib/subscribe",
+          "@types": "lib/types"
+        }
+      },
+      "rule": "convert_require",
+      "target": {
+        "indexing_style": "property",
+        "name": "roblox",
+        "rojo_sourcemap": "./sourcemap.json"
+      }
+    },
+    {
+      "identifier": "__DEV__",
+      "rule": "inject_global_value",
+      "value": false
+    },
+    "remove_empty_do",
+    "compute_expression",
+    "remove_unused_if_branch",
+    "remove_unused_while"
+  ]
+}
