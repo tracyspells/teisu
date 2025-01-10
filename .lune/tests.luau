@@ -1,16 +1,15 @@
 local fs = require("@lune/fs")
 local process = require("@lune/process")
-local testkit = require("../test/testkit")
+local testkit = require("@testkit/")
+local test_types = require("@test-types/")
 local path = require("utils/path")
 
 type Map<K, V> = { [K]: V }
 
-type CASE = (name: string) -> ()
-type CHECK = <T>(value: T) -> T
-
-type TEST_FN = (CASE, CHECK) -> ()
-
-type TESTS = { {name: string, fn: TEST_FN } }
+type CASE = test_types.CASE
+type CHECK = test_types.CHECK
+type TEST_FN = test_types.TEST_FN
+type TESTS = test_types.TESTS
 
 local readDir = fs.readDir
 local isFile = fs.isFile
@@ -20,9 +19,7 @@ local TEST, CASE, CHECK, FINISH = testkit.test()
 local DIRECTORY = path(process.cwd, "test", "tests")
 
 local function TITLE(name: string)
-    print()
-    print(testkit.color.white_underline(name))
-    print()
+    print(`\n` .. testkit.color.white_underline(name) .. `\n`)
 end
 
 local tests: TESTS = {} do
