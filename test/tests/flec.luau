@@ -41,11 +41,7 @@ return function(CASE: CASE, CHECK: CHECK)
 	do
 		CASE("custom equality function")
 
-		local max = flec(0, {
-			equals = function(old, new)
-				return new < old
-			end,
-		})
+		local max = flec(0, function(old, new) return new < old end)
 
 		max(5)
 		CHECK(max() == 5)

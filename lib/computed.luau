@@ -1,22 +1,16 @@
-local types = require("./types")
-local graph = require("./graph")
+local types = require("@types/")
+local graph = require("@graph/")
 
 type Set<T> = types.Set<T>
 
 type Molecule<T> = types.Molecule<T>
 type Node<T> = types.Node<T>
 
-type Options<T> = {
-	equals: (old: T, new: T) -> boolean,
-}
-
 local evaluate = graph.evaluate
 local createNode = graph.createDerivedNode
 local capturing = graph.capturing
 
-local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
-	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil
-
+local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boolean)?): Molecule<T>
 	local node: Node<T>
 	node = createNode(function()
 		local old = node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
@@ -30,7 +24,11 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 	return function(...: any)
 		if select("#", ...) == 0 then
 			if capturing.n > 0 then
-				capturing[capturing.n][node] = true
+				local scope = capturing[capturing.n]
+
+				if scope.type == nil then
+					scope[node] = true
+				end
 			end
 
 			evaluate(node)
@@ -38,13 +36,13 @@ local function computed<T>(callback: () -> T, options: Options<T>?): Molecule<T>
 			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 		end
 
-		local argument = ...
+		local target = ...
 
-		if argument == graph.NODE_KEY then
-			return node :: any
+		if target ~= graph.NODE_KEY then
+			return nil :: never
 		end
 
-		return nil :: never
+		return node :: never
 	end
 end
 

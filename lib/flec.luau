@@ -1,24 +1,26 @@
-local types = require("./types")
-local graph = require("./graph")
+local types = require("@types/")
+local graph = require("@graph/")
 
 type Flec<T> = types.Flec<T>
 type Transformer<T> = (old: T) -> T
-type Options<T> = {
-	equals: (old: T, new: T) -> boolean,
-}
+
+type EqualityFn<T> = (old: T, new: T) -> boolean
 
 local createNode = graph.createSourceNode
 local updateDescendants = graph.updateDescendants
 local capturing = graph.capturing
 
-local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
+local function flec<T>(initial_value: T, equals: EqualityFn<T>?): Flec<T>
 	local node = createNode(initial_value)
-	local equals = if options ~= nil and options.equals ~= nil then options.equals else nil
 
-	local function flec(...: any)
+	return function(...: any)
 		if select("#", ...) == 0 then
 			if capturing.n > 0 then
-				capturing[capturing.n][node] = true
+				local scope = capturing[capturing.n]
+
+				if scope.type == nil then
+					scope[node] = true
+				end
 			end
 
 			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
@@ -40,7 +42,7 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 			new = target
 		end
 
-		if old ~= new and not (equals ~= nil and equals(old, new)) then
+		if new ~= old and not (equals ~= nil and equals(old, new)) then
 			node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new
 
 			updateDescendants(node)
@@ -48,8 +50,6 @@ local function flec<T>(initial_value: T, options: Options<T>?): Flec<T>
 
 		return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
 	end
-
-	return flec
 end
 
-return flec :: (<T>(initial_value: T, options: Options<T>?) -> Flec<T>) & (<T>() -> Flec<T>)
+return flec :: (<T>(initial_value: T, equals: EqualityFn<T>?) -> Flec<T>) & (<T>() -> Flec<T>)

@@ -1,10 +1,14 @@
-if not game then
-	script = require("../test/relative-string")
-end
-
 export type Map<K, V> = { [K]: V }
 export type Array<T> = { T }
 export type Set<T> = Map<T, (boolean | unknown)>
+
+export type LAB = {
+	L: number,
+	A: number,
+	B: number,
+}
+
+export type Cleanup = () -> ()
 
 export type NodeState = "clean" | "check" | "dirty"
 export type NodeNonCleanState = "check" | "dirty"
@@ -22,6 +26,13 @@ export type Node<T> = {
 
 export type Molecule<T> = () -> T
 export type Flec<T> = (() -> T) & ((value: T | ((T) -> T)) -> T)
+
+export type Spring<T> = ( Molecule<T> ) & {
+	impulse: (self: Spring<T>, delta: T) -> (),
+	setPosition: (self: Spring<T>, newValue: T) -> (),
+	setVelocity: (self: Spring<T>, newValue: T) -> (),
+	onComplete: (callback: (value: T) -> ()) -> Cleanup
+}
 
 export type UsedAs<T> = Molecule<T> | T
 export type Use = <T>(target: UsedAs<T>) -> T

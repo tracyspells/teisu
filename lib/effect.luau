@@ -1,5 +1,5 @@
-local types = require("./types")
-local graph = require("./graph")
+local types = require("@types/")
+local graph = require("@graph/")
 
 type Set<T> = types.Set<T>
 

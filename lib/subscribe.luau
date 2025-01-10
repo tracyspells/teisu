@@ -1,33 +1,41 @@
-local types = require("./types")
-local effect = require("./effect")
+local types = require("@types/")
+local effect = require("@effect/")
+local peek = require("@peek/")
 
 type Molecule<T> = types.Molecule<T>
-
-type Node<T> = types.Node<T>
-
 type Cleanup = () -> ()
 type Listener<T> = (T, T) -> ()
+type NONE = { __none: "__none" }
 
-local function subscribe<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
-	local old: T? = nil
+local NONE = { __none = "__none" }
+
+return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
+	local old: T | NONE = NONE :: any
+	local disconnected = false
 
 	local dispose = effect(function()
 		local new = molecule()
 
-		old = if old == nil then new else old
+		if old ~= NONE and new ~= old then
+			peek(function()
+				listener(new, old :: T)
+				return nil
+			end)
+		end
 
-		if new ~= old then
-			local temp = old :: T
+		return function()
+			if disconnected then
+				return
+			end
 			old = new
-
-			listener(new, temp)
 		end
 	end)
 
 	return function()
+		if disconnected then
+			return
+		end
+		disconnected, old = true, nil :: never
 		dispose()
-		old = nil
 	end
 end
-
-return subscribe

@@ -1,29 +1,25 @@
-local types = require("./types")
-local graph = require("./graph")
+local types = require("@types/")
+local graph = require("@graph/")
 
 type UsedAs<T> = types.UsedAs<T>
 
 local capturing = graph.capturing
+local new_scope = graph.new_scope
+local remove_scope = graph.remove_scope
 
-local function peek<T>(target: UsedAs<T>): T
+return function<T>(target: UsedAs<T>, force: boolean?): T
 	if typeof(target) ~= "function" then
 		return target :: T
 	end
 
-	if capturing.n == 0 then
+	if capturing.n == 0 or force == true then
 		return target()
 	end
 
-	local index = capturing.n + 1
-	capturing.n = index
-	capturing[index] = {}
-
+	local index, scope = new_scope()
 	local result = target()
-
-	capturing.n = index - 1
-	capturing[index] = nil
+	remove_scope(index)
+	table.clear(scope)
 
 	return result
 end
-
-return peek

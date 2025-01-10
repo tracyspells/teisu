@@ -1,7 +1,7 @@
 local teisu = require("../../lib/init")
 local graph = require("../../lib/graph")
-local count = require("../utils/count")
 local types = require("../types")
+local count = require("../utils/count")
 
 local flec = teisu.flec
 local peek = teisu.peek
@@ -63,5 +63,16 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(peek(1) == 1)
 		CHECK(peek(false) == false)
 		CHECK(peek(function() return 1 end) == 1)
+	end
+
+	do
+		CASE("doesn't untrack a flec if 'force' argument is enabled")
+
+		local a, b = flec(1), flec(2)
+		local c = computed(function()  
+			return a() * peek(b, true)
+		end)
+
+		CHECK(c() == 2)
 	end
 end

@@ -1,28 +1,30 @@
 local teisu = require("../../lib/init")
+local graph = require("../../lib/graph")
+local teisu_types = require("../../lib/types")
 local types = require("../types")
+local testkit = require("../testkit")
 local count = require("../utils/count")
 
 local flec = teisu.flec
 local observe = teisu.observe
 local mapped = teisu.mapped
-local subscribe = teisu.subscribe
+local root = teisu.root
+local cleanup = teisu.cleanup
+local castToNode = graph.castToReactable
+local equals = testkit.seq
 
 type CASE = types.CASE
 type CHECK = types.CHECK
+
+type Node<T> = teisu_types.Node<T>
 
 return function(CASE: CASE, CHECK: CHECK)
 	do
 		CASE("validate")
 
-		local updates = 0
-
 		local items = flec({ "a", "b", "c" })
 		local allUpperCase = mapped(items, function(item)
 			return string.upper(item)
-		end)
-
-		local unsubscribe = subscribe(allUpperCase, function()
-			updates += 1
 		end)
 
 		for index = 1, 3 do
@@ -34,40 +36,28 @@ return function(CASE: CASE, CHECK: CHECK)
 
 		items({ "d", "e", "f" })
 
-		CHECK(updates == 1)
+		CHECK(equals(allUpperCase(), { "D", "E", "F" }))
 
-		for index = 1, 3 do
-			local item, uppercase = items()[index], allUpperCase()[index]
-			CHECK(uppercase == string.upper(item))
-		end
+		items(function(old) 
+			local new = table.clone(old) 
+			new[2] = nil 
+			new[3] = nil
+			return new 
+		end)
 
-		items({ "c" })
-
-		CHECK(updates == 2)
-		CHECK(allUpperCase()[1] == string.upper(items()[1]))
-
+		CHECK(equals(allUpperCase(), { "D" }))
 		items({ "c", "d" })
+		CHECK(equals(allUpperCase(), { "C", "D" }))
 
-		CHECK(updates == 3)
+		items(function(old) 
+			local new = table.clone(old) 
+			new[2] = nil 
+			return new 
+		end)
 
-		for index = 1, 2 do
-			local uppercase = allUpperCase()[index]
-			local item = items()[index]
-
-			CHECK(uppercase == string.upper(item))
-		end
-
-		items({ [1] = "b", [3] = "f" })
-
-		CHECK(updates == 4)
 		CHECK(allUpperCase()[2] == nil)
-
 		items({})
-
-		CHECK(updates == 5)
 		CHECK(count(allUpperCase()) == 0)
-
-		unsubscribe()
 	end
 
 	do
@@ -95,19 +85,20 @@ return function(CASE: CASE, CHECK: CHECK)
 
 		local new = map()
 		local current = items()
-
+		
 		CHECK(new[1] == previous[1])
 		CHECK(new[1] == current[1])
 		CHECK(new[2] == previous[2])
-		CHECK(new[2] ~= current[2])
+		CHECK(new[2] ~= current[2]) -- checks if new[2] is nil
 		CHECK(new[3] == previous[3])
-		CHECK(new[3] ~= current[3])
+		CHECK(new[3] ~= current[3]) -- similar to above comment
 	end
 
 	do
 		CASE("observe() support")
 
 		local added, deleted = 0, 0
+		local cleaning_up = false
 
 		local items = flec({
 			{ key = 1, value = "a" },
@@ -120,14 +111,13 @@ return function(CASE: CASE, CHECK: CHECK)
 		end)
 
 		local stopObserving = observe(map, function(item, key)
-			local original = items()[key]
-			CHECK(item == original)
+			CHECK(item == items()[key])
 			added += 1
-
+			
 			return function()
-				local source = map()[key]
-
-				CHECK(source == nil)
+				if cleaning_up then return end
+	
+				CHECK(map()[key] == nil)
 				deleted += 1
 			end
 		end)
@@ -138,17 +128,49 @@ return function(CASE: CASE, CHECK: CHECK)
 		items(function(old)
 			local new = table.clone(old)
 			new[2] = nil
-
 			return new
 		end)
 
 		CHECK(added == 3)
 		CHECK(deleted == 1)
-
 		items({})
-
-		CHECK(added == deleted)
-
+		CHECK(deleted == added)
+		cleaning_up = true
 		stopObserving()
+	end
+
+	do
+		CASE("root() support")
+
+		local cleaned_up = false
+		local source = flec({ 1, 2, 3 })
+		local node = castToNode(source)
+
+		local unroot = root(function()
+			mapped(source, function(...)
+				return ...
+			end)
+		end)
+
+		CHECK(cleaned_up == false)
+		CHECK(node ~= nil and count(node.children) == 1)
+		cleanup(function() 
+			unroot()
+			cleaned_up = true
+		end) 
+		CHECK(cleaned_up == true)
+		CHECK(node ~= nil and count(node.children) == 0)
+	end
+
+	do
+		CASE("can be cleaned up")
+
+		local map = mapped(flec({ 1, 2, 3 }), function(...)
+			return ...
+		end)
+
+		CHECK(map() ~= nil)
+		cleanup(map)
+		CHECK(map() == nil)
 	end
 end

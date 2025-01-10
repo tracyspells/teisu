@@ -1,5 +1,5 @@
-local types = require("./types")
-local flags = require("./flags")
+local types = require("@types/")
+local flags = require("@flags/")
 
 type Map<K, V> = types.Map<K, V>
 type Array<T> = types.Array<T>
@@ -9,14 +9,44 @@ type Node<T> = types.Node<T>
 type NodeState = types.NodeState
 type NodeNonCleanState = types.NodeNonCleanState
 
+export type Scope = Map<any, any>
+
 local batched: Set<Node<any>> = {}
-local capturing = { n = 0 } :: { [number]: Set<Node<any>>, n: number }
+local capturing = { n = 0 } :: { [number]: Scope, n: number }
 
 local NODE_KEY = newproxy()
 
+local function new_scope(): (number, Scope)
+	local scope = {}
+
+	local index = capturing.n + 1
+	capturing.n = index
+	capturing[index] = scope
+
+	return index, scope
+end
+
+local function push_scope(scope: Scope): number
+	local n = capturing.n + 1
+	capturing.n = n
+	capturing[n] = scope
+
+	return n
+end
+
+local function remove_scope(index: number)
+	local n = index - 1
+	capturing.n = n
+	capturing[index] = nil
+end
+
+local function get_scope(index: number?): Scope?
+	return capturing[index or capturing.n]
+end
+
 local function createSourceNode<T>(initialState: T): Node<T>
 	return {
-		parents = table.freeze({}),
+		parents = table.freeze {},
 		children = {},
 		state = "clean",
 		createdAt = os.clock(),
@@ -36,10 +66,10 @@ local function createDerivedNode<T>(effect: () -> ()): Node<T>
 	}
 end
 
-local function createEagerNode<T>(effect: () -> ()): Node<T>
+local function createEagerNode<T>(effect: (...any) -> ()): Node<T>
 	return {
 		parents = {},
-		children = table.freeze({}),
+		children = table.freeze {},
 		state = "dirty",
 		createdAt = os.clock(),
 		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = false,
@@ -92,18 +122,14 @@ local function update<T>(node: Node<T>)
 		node.parents[parent] = nil
 	end
 
-	local effect = node.effect :: (() -> ()) | boolean
+	local effect = node.effect :: (() -> ()) | false
 	if effect ~= false then
 		local parents: Set<Node<any>> = {}
-
-		local index = capturing.n + 1
-		capturing.n = index
-		capturing[index] = parents
+		local index = push_scope(parents)
 
 		local ok, message: string? = xpcall(effect :: () -> (), debug.traceback)
 
-		capturing.n = index - 1
-		capturing[index] = nil
+		remove_scope(index)
 
 		if not ok then
 			error(message)
@@ -149,14 +175,18 @@ local function updateDescendants(sourceNode: Node<any>)
 		return
 	end
 
+	if next(sourceNode.children) == nil then
+		return
+	end
+
 	local queue: Array<Set<Node<any>>> = { sourceNode.children }
 
 	local eagerNodes: Array<Node<any>> = {}
 	local eagerNodesSeen: Map<Node<any>, number> = {}
 
-	local children = table.remove(queue, 1)
+	repeat
+		local children = table.remove(queue, 1) :: Set<Node<any>>
 
-	while children ~= nil do
 		for child in next, children do
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager ~= nil and true or false
@@ -173,19 +203,24 @@ local function updateDescendants(sourceNode: Node<any>)
 				table.insert(queue, child.children)
 			end
 		end
+	until #queue <= 0 or children == nil
 
-		children = table.remove(queue, 1)
-	end
+	table.clear(eagerNodesSeen)
 
-	for _, node in ipairs(eagerNodes) do
+	for _, node in next, eagerNodes do
 		updateIfNecessary(node)
 	end
 end
 
-return table.freeze({
+return table.freeze {
 	NODE_KEY = NODE_KEY,
 	capturing = capturing,
 	batched = batched,
+
+	push_scope = push_scope,
+	new_scope = new_scope,
+	remove_scope = remove_scope,
+	get_scope = get_scope,
 
 	createSourceNode = createSourceNode,
 	isSourceNode = isSourceNode,
@@ -195,4 +230,4 @@ return table.freeze({
 	castToReactable = castToReactable,
 	updateDescendants = updateDescendants,
 	establishBonds = establishBonds,
-})
+}
