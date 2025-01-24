@@ -9,7 +9,7 @@ return function(program: string, ...: string)
   local result = process.spawn(program, arguments, SPAWN_OPTIONS)
 
   if not result.ok then
-    print(`\n`..result.stdout..`\n`..result.stderr..`\nProcess excited with code `..result.code)
+    print(result.stdout..`\n`..result.stderr..`\nProcess exited with code {result.code}`..`\n`)
   end
 
   return result
