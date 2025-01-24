@@ -25,8 +25,8 @@ type ServerInstance<K = string | number, V = any> = {
 }
 
 type Server = {
-    hydrate: (self: Server, player: Player) -> (),
-    connect: (self: Server, callback: (Player, SyncPayload) -> ()) -> Cleanup,
+	hydrate: (self: Server, player: Player) -> (),
+	connect: (self: Server, callback: (Player, SyncPayload) -> ()) -> Cleanup,
 }
 
 local server_instance: ServerInstance<any, any>?
