@@ -72,7 +72,7 @@ return function(CASE: CASE, CHECK: CHECK)
 			a(5)
 		end)
 
-		CHECK(updates == 1)
+		CHECK(updates == 3)
 		CHECK(resultA == 5)
 		CHECK(resultB == 2)
 		CHECK(resultC == 4)
@@ -84,7 +84,7 @@ return function(CASE: CASE, CHECK: CHECK)
 			b(9)
 		end)
 
-		CHECK(updates == 2)
+		CHECK(updates == 5)
 		CHECK(resultA == 7)
 		CHECK(resultB == 9)
 		CHECK(resultC == 4)
@@ -128,12 +128,38 @@ return function(CASE: CASE, CHECK: CHECK)
 			c(3)
 		end)
 
-		CHECK(updates == 1)
+		CHECK(updates == 4)
 		CHECK(resultA == 2)
 		CHECK(resultB == 4)
 		CHECK(resultC == 3)
 		CHECK(resultD == 10)
 
 		dispose()
+	end
+
+	do
+		CASE("subsequent updates do not batch")
+
+		local a, b, c = flec(0), flec(0), flec(0)
+		local updates = 0
+
+		local dispose_a = effect(function()
+			b()
+			c()
+			updates += 1
+		end)
+
+		local dispose_b = effect(function()
+			b(a())
+			c(a())
+		end)
+
+		batch(function()
+			a(1)
+		end)
+
+		CHECK(updates == 3)
+		dispose_a()
+		dispose_b()
 	end
 end

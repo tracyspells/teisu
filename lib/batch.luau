@@ -27,22 +27,15 @@ return function(callback: () -> ())
 		error(`error occured while batching updates: \n{message}`)
 	end
 
-	local dependency: Node? = nil
-
 	for node in next, results do
 		local isSourceNode = node.eager == nil and node.effect == false
 
+		if not isSourceNode then
+			continue
+		end
+
 		node.isPartOfBatch = nil
 
-		if dependency == nil and isSourceNode then
-			dependency = node
-		end
-	end
-
-	-- we only need one dependency to update its descendants
-	-- this solves the issue of computeds/effects having more than one dependency
-	-- being updated each time after a batch call completes
-	if dependency ~= nil then
-		updateDescendants(dependency)
+		updateDescendants(node)
 	end
 end
