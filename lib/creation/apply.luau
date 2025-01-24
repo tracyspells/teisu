@@ -101,7 +101,6 @@ do
 end
 
 local free_cache: Cache?
---local setter = { __index = function(self, index: any) self[index] = {}; return self[index] end }
 
 local function borrow_cache(): Cache
 	if free_cache then
