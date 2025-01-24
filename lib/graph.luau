@@ -51,6 +51,7 @@ local function createSourceNode<T>(initialState: T): Node<T>
 		state = "clean",
 		createdAt = os.clock(),
 		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = initialState,
+		nickname = "flec",
 		effect = false,
 	}
 end
@@ -62,6 +63,7 @@ local function createDerivedNode<T>(effect: () -> ()): Node<T>
 		state = "dirty",
 		createdAt = os.clock(),
 		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = false,
+		nickname = "computed",
 		effect = effect,
 	}
 end
@@ -74,14 +76,14 @@ local function createEagerNode<T>(effect: (...any) -> ()): Node<T>
 		createdAt = os.clock(),
 		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = false,
 		effect = effect,
+		nickname = "effect",
 		eager = true,
 	}
 end
 
 local function establishBonds(child: Node<any>, parent: Node<any>)
 	if table.isfrozen(parent.children) or table.isfrozen(child.parents) then
-		--TODO: make a cool error here
-
+		error(`{parent.nickname} cannot depend on {child.nickname}`)
 		return
 	end
 
