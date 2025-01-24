@@ -2,6 +2,8 @@ export type Map<K, V> = { [K]: V }
 export type Array<T> = { T }
 export type Set<T> = Map<T, (boolean | unknown)>
 
+export type NONE = { __none: "__none" }
+
 export type LAB = {
 	L: number,
 	A: number,
@@ -21,6 +23,7 @@ export type Node<T> = {
 	___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value: T | false,
 	eager: boolean?,
 	isPartOfBatch: boolean?,
+	nickname: string,
 	effect: (() -> ()) | false,
 }
 
@@ -36,5 +39,20 @@ export type Spring<T> = Molecule<T> & {
 
 export type UsedAs<T> = Molecule<T> | T
 export type Use = <T>(target: UsedAs<T>) -> T
+
+export type PatchOperation = "add" | "remove" | "replace"
+export type Patch<K, V> = {
+	op: PatchOperation,
+	path: { K },
+	value: V | NONE,
+}
+
+export type SyncPayload = {
+	type: "init",
+	data: { [string | number]: any },
+} | {
+	type: "patch",
+	data: { Patch<string | number, any> },
+}
 
 return nil

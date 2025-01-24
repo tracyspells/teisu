@@ -1,6 +1,8 @@
 local types = require("@types/")
 local animation = require("@animation/")
 local creation = require("@creation/")
+local sync = require("@sync/")
+local patch = require("@patch/")
 local action = require("@action/")
 local flec = require("@flec/")
 local subscribe = require("@subscribe/")
@@ -19,14 +21,18 @@ export type Derivable<T> = types.UsedAs<T>
 export type derivable<T> = Derivable<T>
 export type Spring<T> = types.Spring<T>
 export type spring<T> = Spring<T>
+export type SyncPayload = types.SyncPayload
+export type sync_payload = SyncPayload
 
 local update_springs = animation.step_springs()
+local update_server = sync.step_server()
 
 local mount, new, root, _apply = creation.mount, creation.new, creation.root, creation.apply
 local cleanup = creation.cleanup
 
 local stepped: RBXScriptConnection?
 local is_game = game ~= nil
+local is_server = is_game and game:GetService("RunService"):IsServer()
 
 local function on_step(deltaTime: number)
 	if is_game then
@@ -39,6 +45,18 @@ local function on_step(deltaTime: number)
 	if is_game then
 		debug.profileend()
 		debug.profileend()
+	end
+
+	if not is_game or is_server then
+		if is_game then
+			debug.profilebegin("TEISU SYNC")
+		end
+
+		update_server(deltaTime)
+
+		if is_game then
+			debug.profileend()
+		end
 	end
 end
 
@@ -88,6 +106,11 @@ return table.freeze {
 
 	-- animations
 	spring = animation.spring,
+
+	-- networking
+	client = sync.client,
+	server = sync.server,
+	is_none = patch.is_none,
 
 	-- runtime
 	step = function(deltaTime: number)
