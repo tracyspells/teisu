@@ -11,6 +11,7 @@
           "@apply": "lib/creation/apply",
           "@batch": "lib/batch",
           "@cleanup": "lib/creation/cleanup",
+          "@client": "lib/sync/client",
           "@computed": "lib/computed",
           "@convert": "lib/animation/convert",
           "@creation": "lib/creation",
@@ -22,9 +23,12 @@
           "@lab": "lib/lab",
           "@mapped": "lib/mapped",
           "@observe": "lib/observe",
+          "@patch": "lib/sync/patch",
           "@peek": "lib/peek",
+          "@server": "lib/sync/server",
           "@spring": "lib/animation/spring",
           "@subscribe": "lib/subscribe",
+          "@sync": "lib/sync",
           "@types": "lib/types"
         }
       },
