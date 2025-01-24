@@ -7,8 +7,8 @@
 rojo = "rojo-rbx/rojo@7.4.4"
 StyLua = "JohnnyMorganz/StyLua@2.0.2"
 wally = "UpliftGames/wally@0.3.2"
-selene = "Kampfkarren/selene@0.27.1"
-luau-lsp = "JohnnyMorganz/luau-lsp@1.38.0"
+selene = "Kampfkarren/selene@0.28.0"
+luau-lsp = "JohnnyMorganz/luau-lsp@1.38.1"
 lune = "lune-org/lune@0.8.9"
 darklua = "seaofvoices/darklua@0.15.0"
 
