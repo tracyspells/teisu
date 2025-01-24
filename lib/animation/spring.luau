@@ -10,9 +10,7 @@ type Molecule<T> = types.Molecule<T>
 type UsedAs<T> = types.UsedAs<T>
 type Spring<T> = types.Spring<T>
 type Node<T> = types.Node<T>
-
-type Cleanup = () -> ()
-
+type Cleanup = types.Cleanup
 type SpringState<T> = {
 	goal: T,
 	goalType: string,
@@ -131,6 +129,7 @@ end
 
 local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: UsedAs<number>?): Spring<T>
 	local output = createSourceNode(nil :: T?)
+	output.nickname = "spring"
 
 	local state = {} :: SpringState<T>
 	state.onCompleteListeners = { n = 0 } :: { [number]: (value: T) -> (), n: number }

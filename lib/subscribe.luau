@@ -5,7 +5,7 @@ local peek = require("@peek/")
 type Molecule<T> = types.Molecule<T>
 type Cleanup = () -> ()
 type Listener<T> = (T, T) -> ()
-type NONE = { __none: "__none" }
+type NONE = types.NONE
 
 local NONE = { __none = "__none" }
 
@@ -16,7 +16,7 @@ return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
 	local dispose = effect(function()
 		local new = molecule()
 
-		if old ~= NONE and new ~= old then
+		if (old ~= NONE and new ~= NONE) and new ~= old then
 			peek(function()
 				listener(new, old :: T)
 				return nil
