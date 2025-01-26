@@ -29,8 +29,8 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 	local owner = get_root_scope()
 
 	return function(map)
-		local destroy_scope: ( () -> () )?
-		local last_component: ( () -> U )?
+		local destroy_scope: (() -> ())?
+		local last_component: (() -> U)?
 		local node: Node<U>
 
 		local function update()
@@ -38,21 +38,21 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 
 			if owner and destroy_scope then
 				remove_from_root_scope(owner, destroy_scope)
-			end	
+			end
 
 			if destroy_scope then
 				destroy_scope()
 				destroy_scope = nil
 			end
 
-			if component == nil then 
+			if component == nil then
 				node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = nil :: never
 				return
 			end
 
 			if typeof(component) ~= "function" then
-                return error("map must map a value to a function")
-            end
+				return error("map must map a value to a function")
+			end
 
 			if component == last_component then
 				return
@@ -77,7 +77,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 			if select("#", ...) == 0 then
 				if capturing.n > 0 then
 					local scope = capturing[capturing.n]
-	
+
 					if scope.type == nil then
 						scope[node] = true
 					end

@@ -47,14 +47,14 @@ local function get_scope(index: number?): Scope?
 	return capturing[index or capturing.n]
 end
 
-local function get_root_scope(): (RootScope)?
-	if capturing.n == 0 then 
-		return 
+local function get_root_scope(): RootScope?
+	if capturing.n == 0 then
+		return
 	end
-	
+
 	local current_scope = get_scope()
-	if not current_scope or current_scope.type ~= "root" then 
-		return 
+	if not current_scope or current_scope.type ~= "root" then
+		return
 	end
 
 	return current_scope
@@ -81,7 +81,7 @@ local function remove_from_root_scope(scope: RootScope, object: any)
 	local index = scope.already_queued[object]
 	local n = index - 1
 	scope.already_queued[object] = nil
-	scope[index] = nil 
+	scope[index] = nil
 	scope.n = n
 end
 
