@@ -9,10 +9,11 @@ type Spring<T> = types.Spring<T>
 type Destroyable = { destroy: (any) -> () } | { Destroy: (any) -> () }
 type Disconnectable = { disconnect: (any) -> () } | { Disconnect: (any) -> () }
 
-local capturing = graph.capturing
 local is_spring = spring.is_spring
 local push_scope = graph.push_scope
 local remove_scope = graph.remove_scope
+local get_root_scope = graph.get_root_scope
+local push_to_root_scope = graph.push_to_root_scope
 
 local function get_cleanup(obj: any): () -> ()
 	return if typeof(obj) == "RBXScriptConnection"
@@ -59,21 +60,14 @@ local function do_cleanup(fn: () -> ())
 end
 
 local function cleanup(object: any)
-	local scope = capturing.n > 0 and capturing[capturing.n] or nil
-	local is_scope_stable = scope ~= nil and scope.type == "root" and scope.already_queued ~= nil
+	local scope = get_root_scope()
 	local fn = type(object) == "function" and object :: () -> () or get_cleanup(object)
 
-	if not is_scope_stable then
+	if not scope then
 		return do_cleanup(fn)
 	end
 
-	local stable_scope: graph.Scope = scope :: any
-	if not stable_scope.already_queued[object] then
-		stable_scope.already_queued[object] = true
-		table.insert(stable_scope, fn)
-	end
-
-	return
+	push_to_root_scope(scope, object, fn)
 end
 
 return cleanup :: ((callback: () -> ()) -> ()) & ((thread: thread) -> ()) & ((instance: Destroyable) -> ()) & ((connection: Disconnectable) -> ()) & ((instance: Instance) -> ()) & ((connection: RBXScriptConnection) -> ())

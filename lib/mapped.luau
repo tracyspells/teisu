@@ -15,9 +15,14 @@ type MappedConstructor =
 
 local createNode = graph.createSourceNode
 local updateDescendants = graph.updateDescendants
+local get_root_scope = graph.get_root_scope
+local push_to_root_scope = graph.push_to_root_scope
 local capturing = graph.capturing
 
 local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
+	local is_under_root_scope = false
+	local owner = get_root_scope()
+	
 	local node = createNode {} :: Node<{ [K1]: V1 }>
 
 	local previous_items: { [K0]: V0 }?
@@ -44,14 +49,9 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 		node = nil :: never
 	end
 
-	local is_under_root_scope = false
-	if capturing.n > 0 and capturing[capturing.n].type == "root" then
-		local scope = capturing[capturing.n]
-		if not scope.already_queued[cleanup] then
-			is_under_root_scope = true
-			scope.already_queued[cleanup] = true
-			table.insert(scope, cleanup)
-		end
+	if owner then
+		push_to_root_scope(owner, cleanup, cleanup)
+		is_under_root_scope = true
 	end
 
 	dispose = effect(function()

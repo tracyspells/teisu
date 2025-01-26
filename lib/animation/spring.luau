@@ -30,6 +30,8 @@ type SpringState<T> = {
 
 local createSourceNode = graph.createSourceNode
 local updateDescendants = graph.updateDescendants
+local get_root_scope = graph.get_root_scope
+local push_to_root_scope = graph.push_to_root_scope
 local capturing = graph.capturing
 
 -- maps spring data to its corresponding output node
@@ -128,6 +130,8 @@ local function is_spring(value: any): boolean
 end
 
 local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: UsedAs<number>?): Spring<T>
+	local owner = get_root_scope()
+
 	local output = createSourceNode(nil :: T?)
 	output.nickname = "spring"
 
@@ -212,10 +216,9 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		end
 	end
 
-	local is_under_root_scope = false
+	local is_under_root_scope, cleaned_up = false, false
 	local updates = -1
 	local dispose
-	local cleaned_up = false
 	local cleanup = function()
 		if cleaned_up then
 			return
@@ -269,13 +272,9 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 
 	self = table.freeze(self)
 
-	if capturing.n > 0 and capturing[capturing.n].type == "root" then
-		local scope = capturing[capturing.n]
-		if not scope.already_queued[self] then
-			is_under_root_scope = true
-			scope.already_queued[self] = true
-			table.insert(scope, cleanup)
-		end
+	if owner then
+		push_to_root_scope(owner, self, cleanup)
+		is_under_root_scope = true
 	end
 
 	dispose = effect(function()

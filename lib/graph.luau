@@ -5,11 +5,14 @@ type Map<K, V> = types.Map<K, V>
 type Array<T> = types.Array<T>
 type Set<T> = types.Set<T>
 
+type Cleanup = types.Cleanup
+
 type Node<T> = types.Node<T>
 type NodeState = types.NodeState
 type NodeNonCleanState = types.NodeNonCleanState
 
 export type Scope = Map<any, any>
+export type RootScope = { [number]: Cleanup, n: number, type: "root", already_queued: { [any]: number } }
 
 local batched: Set<Node<any>> = {}
 local capturing = { n = 0 } :: { [number]: Scope, n: number }
@@ -42,6 +45,44 @@ end
 
 local function get_scope(index: number?): Scope?
 	return capturing[index or capturing.n]
+end
+
+local function get_root_scope(): (RootScope)?
+	if capturing.n == 0 then 
+		return 
+	end
+	
+	local current_scope = get_scope()
+	if not current_scope or current_scope.type ~= "root" then 
+		return 
+	end
+
+	return current_scope
+end
+
+local function push_to_root_scope(scope: RootScope, object: any, cleanup: () -> ()): number
+	if scope.already_queued[object] then
+		return scope.already_queued[object]
+	end
+
+	local n = scope.n + 1
+	scope.n = n
+	scope[n] = cleanup
+	scope.already_queued[object] = n
+
+	return n
+end
+
+local function remove_from_root_scope(scope: RootScope, object: any)
+	if not scope.already_queued[object] then
+		return
+	end
+
+	local index = scope.already_queued[object]
+	local n = index - 1
+	scope.already_queued[object] = nil
+	scope[index] = nil 
+	scope.n = n
 end
 
 local function createSourceNode<T>(initialState: T): Node<T>
@@ -223,6 +264,9 @@ return table.freeze {
 	new_scope = new_scope,
 	remove_scope = remove_scope,
 	get_scope = get_scope,
+	get_root_scope = get_root_scope,
+	push_to_root_scope = push_to_root_scope,
+	remove_from_root_scope = remove_from_root_scope,
 
 	createSourceNode = createSourceNode,
 	isSourceNode = isSourceNode,
