@@ -1,5 +1,6 @@
 local types = require("@types/")
 local graph = require("@graph/")
+local peek = require("@peek/")
 
 type Set<T> = types.Set<T>
 
@@ -11,12 +12,38 @@ type Cleanup = () -> ()
 local evaluate = graph.evaluate
 local createNode = graph.createEagerNode
 
-local function effect(callback: () -> Cleanup?): Cleanup
+local function effect(callback: ( cleanup: (Cleanup) -> () ) -> ()): Cleanup
 	local node: Node<any>
-	local cleanup: Cleanup?
+	local cleanups: { Cleanup } = {}
 
-	local gottenCleanupOnce = false
 	local disconnected = false
+
+	local function add_to_cleanups(fn: Cleanup?)
+		if type(fn) ~= "function" or disconnected then
+			return
+		end
+
+		table.insert(cleanups, fn)
+	end
+
+	local function do_cleanup()
+		local count = #cleanups
+		if count <= 0 then
+			return
+		end
+
+		for index = count, 1, -1 do
+			local cleanup = cleanups[index]
+
+			if not cleanup then
+				continue
+			end
+
+			cleanup()
+		end
+
+		table.clear(cleanups)
+	end
 
 	local function dispose()
 		if not disconnected then
@@ -26,9 +53,7 @@ local function effect(callback: () -> Cleanup?): Cleanup
 				parent.children[node] = nil
 			end
 
-			if cleanup then
-				cleanup()
-			end
+			peek(do_cleanup)
 		end
 	end
 
@@ -37,15 +62,8 @@ local function effect(callback: () -> Cleanup?): Cleanup
 			return
 		end
 
-		if gottenCleanupOnce and cleanup then
-			cleanup()
-		end
-
-		cleanup = callback()
-
-		if cleanup and not gottenCleanupOnce then
-			gottenCleanupOnce = true
-		end
+		peek(do_cleanup)
+		callback(add_to_cleanups)
 	end)
 
 	evaluate(node)
@@ -53,4 +71,4 @@ local function effect(callback: () -> Cleanup?): Cleanup
 	return dispose
 end
 
-return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: () -> Cleanup) -> Cleanup)
+return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: ( cleanup: (Cleanup) -> () ) -> ()) -> Cleanup)

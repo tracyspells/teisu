@@ -73,8 +73,14 @@ local function server(options: Options): Server
 	end
 
 	function self:connect(callback: (Player, SyncPayload) -> ())
-		local dispose = effect(function()
+		local dispose = effect(function(cleanup)
 			instance.current_snapshot = createSnapshot(flecs) :: any
+
+			cleanup(function()
+				if instance.current_snapshot then
+					instance.previous_snapshot = table.clone(instance.current_snapshot) :: any
+				end
+			end)
 
 			if instance.previous_snapshot and instance.current_snapshot then
 				for key, prev_value in instance.previous_snapshot do
@@ -83,12 +89,6 @@ local function server(options: Options): Server
 					if prev_value ~= curr_value then
 						instance.changes += 1
 					end
-				end
-			end
-
-			return function()
-				if instance.current_snapshot then
-					instance.previous_snapshot = table.clone(instance.current_snapshot) :: any
 				end
 			end
 		end)

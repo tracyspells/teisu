@@ -74,12 +74,9 @@ return function(CASE: CASE, CHECK: CHECK)
 
 		local cleanups = 0
 
-		local dispose = effect(function()
+		local dispose = effect(function(cleanup)
+			cleanup(function() cleanups += 1 end)
 			a()
-
-			return function()
-				cleanups += 1
-			end
 		end)
 
 		CHECK(cleanups == 0)
@@ -116,12 +113,12 @@ return function(CASE: CASE, CHECK: CHECK)
 		local mounted = false
 		local disposed = false
 
-		local dispose = effect(function()
+		local dispose = effect(function(cleanup)
 			mounted = true
-
-			return function()
-				disposed = true
-			end
+			
+			cleanup(function() 
+				disposed = true 
+			end)
 		end)
 
 		CHECK(mounted == true)

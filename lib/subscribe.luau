@@ -13,21 +13,21 @@ return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
 	local old: T | NONE = NONE :: any
 	local disconnected = false
 
-	local dispose = effect(function()
+	local dispose = effect(function(cleanup)
 		local new = molecule()
+
+		cleanup(function()
+			if disconnected then
+				return
+			end
+			old = new
+		end)
 
 		if (old ~= NONE and new ~= NONE) and new ~= old then
 			peek(function()
 				listener(new, old :: T)
 				return nil
 			end)
-		end
-
-		return function()
-			if disconnected then
-				return
-			end
-			old = new
 		end
 	end)
 

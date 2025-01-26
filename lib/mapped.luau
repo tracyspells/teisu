@@ -54,7 +54,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 		is_under_root_scope = true
 	end
 
-	dispose = effect(function()
+	dispose = effect(function(mark_to_cleanup)
 		local items = molecule()
 		local mapped_items = table.clone(node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: { [K1]: V1 })
 
@@ -77,6 +77,15 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 
 		-- process new or changed values
 		local cache: { [K0]: { K1 | V1 } } = {}
+
+		mark_to_cleanup(function()
+			if cleaned_up then
+				return
+			end
+			
+			previous_items, mapped_cache = items, cache
+		end)
+
 		for key, item in items do
 			local result = peek(function()
 				local newItem, newKey = mapper(item, key)
@@ -96,13 +105,6 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 		if changes > 0 then
 			node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = mapped_items
 			updateDescendants(node)
-		end
-
-		return function()
-			if cleaned_up then
-				return
-			end
-			previous_items, mapped_cache = items, cache
 		end
 	end)
 
