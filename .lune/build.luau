@@ -10,21 +10,17 @@ local writeFile = fs.writeFile
 local encode = serde.encode
 
 local PATH_DIST = path(process.cwd, "dist")
-local PATH_LIB = path(process.cwd, "lib")
-local PATH_DARKLUA = path(process.cwd, ".darklua.json")
-local ROJO_PROJECT = path(process.cwd, "default.project.json")
-local ROJO_SOURCEMAP = path(process.cwd, "sourcemap.json")
 
 reset(PATH_DIST)
 
 print("Generating sourcemap")
-run("rojo", "sourcemap", ROJO_PROJECT, "-o", ROJO_SOURCEMAP)
+run("rojo", "sourcemap", "default.project.json", "-o", "sourcemap.json")
 
 print("Processing library files")
-run("darklua", "process", PATH_LIB, path(PATH_DIST, "lib"), "-c", PATH_DARKLUA)
+run("darklua", "process", "lib", "dist/lib", "-c", ".darklua.json")
 
 print("Writing Rojo project")
-writeFile(path(PATH_DIST, "default.project.json"), encode("json", rojo_project))
+writeFile("dist/default.project.json", encode("json", rojo_project))
 
 print("Creating Roblox model")
-run("rojo", "build", path(PATH_DIST, "default.project.json"), "-o", path(PATH_DIST, `teisu.rbxm`))
+run("rojo", "build", "dist/default.project.json", "-o", "dist/teisu.rbxm")
