@@ -22,7 +22,7 @@ local capturing = graph.capturing
 local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
 	local is_under_root_scope = false
 	local owner = get_root_scope()
-	
+
 	local node = createNode {} :: Node<{ [K1]: V1 }>
 
 	local previous_items: { [K0]: V0 }?
@@ -82,7 +82,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 			if cleaned_up then
 				return
 			end
-			
+
 			previous_items, mapped_cache = items, cache
 		end)
 
