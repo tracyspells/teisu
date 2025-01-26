@@ -66,7 +66,7 @@ return function(CASE: CASE, CHECK: CHECK)
 	end
 
 	do
-		CASE("doesn't untrack a flec if 'force' argument is enabled")
+		CASE("doesn't untrack a molecule if 'force' argument is enabled")
 
 		local a, b = flec(1), flec(2)
 		local c = computed(function()  
