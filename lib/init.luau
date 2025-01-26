@@ -4,6 +4,7 @@ local creation = require("@creation/")
 local sync = require("@sync/")
 local patch = require("@patch/")
 local action = require("@action/")
+local conditions = require("@conditions/")
 local flec = require("@flec/")
 local subscribe = require("@subscribe/")
 local effect = require("@effect/")
@@ -84,18 +85,20 @@ return table.freeze {
 	mount = mount,
 	apply = apply,
 
-	-- state management
+	-- core
 	flec = flec,
 	computed = computed,
 	effect = effect,
+	show = conditions.show,
+	switch = conditions.switch,
+
+	-- utils
+	batch = batch,
 	mapped = mapped,
 	observe = observe,
 	subscribe = subscribe,
-	peek = peek,
-	batch = batch,
-
-	-- utils
 	cleanup = cleanup,
+	peek = peek,
 
 	-- actions
 	action = action.action,
