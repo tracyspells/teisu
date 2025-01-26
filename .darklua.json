@@ -13,6 +13,7 @@
           "@cleanup": "lib/creation/cleanup",
           "@client": "lib/sync/client",
           "@computed": "lib/computed",
+          "@conditions": "lib/conditions",
           "@convert": "lib/animation/convert",
           "@creation": "lib/creation",
           "@defaults": "lib/creation/defaults",
