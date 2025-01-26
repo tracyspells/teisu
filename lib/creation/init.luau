@@ -12,6 +12,8 @@ type Cleanup = types.Cleanup
 
 type Props = Map<any, any>
 
+type RootScope = graph.RootScope
+
 local push_scope = graph.push_scope
 local remove_scope = graph.remove_scope
 
@@ -71,11 +73,12 @@ local function new(class_or_instance: string | Instance, props: Props?): ((Props
 	return result
 end
 
-local function root(fn: () -> ()): Cleanup
+local function root<T...>(fn: () -> T...): (Cleanup, T...)
 	local scope = {
 		type = "root",
 		already_queued = {},
-	} :: { [number]: Cleanup, type: "root", already_queued: { [any]: true } }
+		n = 0,
+	} :: RootScope
 	local index = push_scope(scope)
 
 	local destroyed = false
@@ -84,32 +87,28 @@ local function root(fn: () -> ()): Cleanup
 			error(`root already destroyed`)
 		end
 
-		local cleanups = table.clone(scope)
-		cleanups.type, cleanups.already_queued = nil :: never, nil :: never
-
-		table.clear(scope)
-
-		for index = #cleanups, 1, -1 do
-			local fn = cleanups[index]
+		for index = scope.n, 1, -1 do
+			local fn = scope[index]
 			if not fn then
 				continue
 			end
 			fn()
 		end
 
+		table.clear(scope)
 		destroyed = true
 	end
 
-	local ok, message: string? = xpcall(fn, debug.traceback)
+	local result = { xpcall(fn, debug.traceback) }
 
 	remove_scope(index)
 
-	if not ok then
+	if not result[1] then
 		destroy()
-		error(`error while running root():\n\n{message}`, 0)
+		error(`error while running root():\n\n{result[2]}`, 0)
 	end
 
-	return destroy
+	return destroy, unpack(result :: any, 2)
 end
 
 local function mount<T>(component: () -> T, target: Instance?): () -> ()
