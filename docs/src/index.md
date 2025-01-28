@@ -4,15 +4,14 @@ layout: home
 
 hero:
   name: "Teisu"
-  text: "A reactive library for Roblox."
-  tagline: My great project tagline
+  text: "A reactive library for Luau."
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
+      text: Get Started
+      link: /quick-start
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: API Reference
+      link: /api/reactivity-core
 
 features:
   - title: Feature A
