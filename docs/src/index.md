@@ -8,17 +8,8 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /quick-start
+      link: /tutorials/getting-started
     - theme: alt
       text: API Reference
       link: /api/reactivity-core
-
-features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
----
 
