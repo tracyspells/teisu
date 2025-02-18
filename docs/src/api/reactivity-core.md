@@ -139,7 +139,7 @@ dispose() -- destroys the effect
 A special `cleanup` function is passed in to the `effect` callback. Functions passed as an argument to this `cleanup` function will run:
 
 1. Before each re-invocation of the `effect` callback (i.e. when one or more dependencies change)
-2. When the `effect` is destroyed (if there were any cleanup functions scheduled, they will run on effect destruction)
+2. When the `effect` itself is destroyed (if there were any functions scheduled, they will run on effect destruction)
 
 **Example Usage:**
 
