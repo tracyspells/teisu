@@ -6,7 +6,7 @@
 
 Inside your `wally.toml`, add the following:
 
-```toml title = "wally.toml"
+```toml title = "wally.toml" {8}
 [package]
 name = "your_name/your_project"
 version = "0.1.0"
