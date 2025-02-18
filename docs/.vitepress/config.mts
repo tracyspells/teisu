@@ -14,21 +14,31 @@ export default defineConfig({
     },
   
     nav: [
-      { text: 'Home', link: '/' },
-      { text: "Quick Start", link: "/quick-start" },
-      { text: 'API', link: '/api/reactivity-core' }
+      { text: "Home", link: "/" },
+      { text: "Tutorials", link: "/tutorials/getting-started" },
+      { text: "API", link: "/api/reactivity-core" },
     ],
 
     sidebar: {
 
-      "/quick-start/": [
+      "/tutorials/": [
         {
-          text: "Quick Start",
+          text: "Getting Started",
           items: [
-            { text: "Installation", link: "/quick-start" },
-            { text: "Why Teisu?", link: "/quick-start/why-teisu" },
+            { text: "Installation", link: "/tutorials/getting-started" },
+            { text: "Why Teisu?", link: "/tutorials/getting-started/why-teisu" },
           ]
         },
+
+        {
+          text: "Fundamentals",
+          items: [
+            { text: "Flecs", link: "/tutorials/fundamentals/flecs" },
+            { text: "Effects", link: "/tutorials/fundamentals/effects" },
+            { text: "Observers", link: "/tutorials/fundamentals/observers" },
+            { text: "Computeds", link: "/tutorials/fundamentals/computeds" },
+          ]
+        }
       ],
 
       "/api/": [
@@ -49,7 +59,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
+      { icon: 'github', link: 'https://github.com/tracyspells/teisu' }
     ]
   }
 })
