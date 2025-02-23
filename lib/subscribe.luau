@@ -13,10 +13,10 @@ return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
 	local old: T | NONE = NONE :: any
 	local disconnected = false
 
-	local dispose = effect(function(cleanup)
+	local dispose = effect(function(_, on_change)
 		local new = molecule()
 
-		cleanup(function()
+		on_change(function()
 			if disconnected then
 				return
 			end
