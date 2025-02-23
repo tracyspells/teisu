@@ -38,6 +38,14 @@ export default defineConfig({
             { text: "Observers", link: "/tutorials/fundamentals/observers" },
             { text: "Computeds", link: "/tutorials/fundamentals/computeds" },
           ]
+        },
+
+        {
+          text: "UI",
+          items: [
+            { text: "Actions", link: "/tutorials/instances/actions" },
+            { text: "Detect Property Changes", link: "/tutorials/instances/property-changes" },
+          ],
         }
       ],
 
