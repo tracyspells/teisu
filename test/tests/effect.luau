@@ -74,8 +74,8 @@ return function(CASE: CASE, CHECK: CHECK)
 
 		local cleanups = 0
 
-		local dispose = effect(function(cleanup)
-			cleanup(function() cleanups += 1 end)
+		local dispose = effect(function(_, on_change)
+			on_change(function() cleanups += 1 end)
 			a()
 		end)
 
@@ -106,6 +106,28 @@ return function(CASE: CASE, CHECK: CHECK)
 		a(2)
 		a(3)
 	end
+	
+	do
+		CASE("conditional cleanups")
+
+		local a = flec(false)
+		local destroyed = 0
+
+		effect(function(dispose)
+			if a() then
+				destroyed += 1
+				return dispose()
+			end
+		end)
+
+		a(false)
+		a(false)
+		a(true)
+		CHECK(destroyed == 1)
+		a(false)
+		a(true)
+		CHECK(destroyed == 1)
+	end
 
 	do
 		CASE("effect lifecycles")
@@ -113,10 +135,10 @@ return function(CASE: CASE, CHECK: CHECK)
 		local mounted = false
 		local disposed = false
 
-		local dispose = effect(function(cleanup)
+		local dispose = effect(function(_, on_change)
 			mounted = true
 			
-			cleanup(function() 
+			on_change(function() 
 				disposed = true 
 			end)
 		end)

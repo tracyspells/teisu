@@ -12,7 +12,7 @@ type Cleanup = () -> ()
 local evaluate = graph.evaluate
 local createNode = graph.createEagerNode
 
-local function effect(callback: (cleanup: (Cleanup) -> ()) -> ()): Cleanup
+local function effect(callback: (dispose: Cleanup, on_change: (Cleanup) -> ()) -> ()): Cleanup
 	local node: Node<any>
 	local cleanups: { Cleanup } = {}
 
@@ -63,7 +63,7 @@ local function effect(callback: (cleanup: (Cleanup) -> ()) -> ()): Cleanup
 		end
 
 		peek(do_cleanup)
-		callback(add_to_cleanups)
+		callback(dispose, add_to_cleanups)
 	end)
 
 	evaluate(node)
@@ -71,4 +71,4 @@ local function effect(callback: (cleanup: (Cleanup) -> ()) -> ()): Cleanup
 	return dispose
 end
 
-return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: (cleanup: (Cleanup) -> ()) -> ()) -> Cleanup)
+return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: (dispose: () -> ()) -> ()) -> Cleanup) & ((callback: (dispose: () -> (), on_change: (Cleanup) -> ()) -> ()) -> Cleanup)
