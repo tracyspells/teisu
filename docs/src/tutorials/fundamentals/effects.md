@@ -89,6 +89,7 @@ a: 2, b: 1
 ```
 :::
 
+### Disposing effects
 
 An `effect` returns a function that destroys itself. When this function is called, any subsequent changes will not rerun the callback.
 
@@ -106,17 +107,29 @@ dispose()
 count(2) --> will not print anything
 ```
 
-### Cleaning up temporary objects
+In situations where you need to disconnect the effect from the inside, use the `dispose` function.
 
-<!--@include: @api/reactivity-core.md{139,143}-->
+```luau
+local count = flec(0)
+
+effect(function(dispose)
+    if count() == 1 then
+        dispose()
+    end
+end)
+```
+
+### Schedule changes
+
+<!--@include: @api/reactivity-core.md{157,160}-->
 
 ::: code-group
 
 ```luau [Luau code]
 local count = flec(0)
 
-effect(function(cleanup)
-    cleanup(function()
+effect(function(_, on_change)
+    on_change(function()
         print(`count has changed!`)
     end)
 

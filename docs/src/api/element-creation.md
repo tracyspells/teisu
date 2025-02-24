@@ -35,14 +35,14 @@ function new(instance: Instance): (Properties) -> Instance
 
 ### Parameters
 
-`create` can either take a `string` or an `Instance` as its first argument:
+`new` can either take a `string` or an `Instance` as its first argument:
 
 1. If given a `string`, a new instance with the same class name will be created.
 2. If given an `Instance`, a clone of said instance is created. Properties will be applied to the cloned instance.
 
 ### Returns
 
-`create` returns a new UI element.
+`new` returns a new UI element.
 
 **Example:**
 
