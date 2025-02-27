@@ -2,7 +2,7 @@
 
 ## subscribe()
 
-Listens for changes in a flec or a molecule (read-only flec that depends on one or more flecs).
+Listens for changes in a flec or a molecule.
 
 ```luau
 type Molecule<T> = () -> T

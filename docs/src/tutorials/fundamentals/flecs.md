@@ -22,7 +22,7 @@ To get the value stored in `health`, call the function with no arguments passed 
 print(health()) --> 100
 ```
 
-Teisu provides a `peek()` function. This function allows you to read the value of whatever you give it. You'll use `peek` for lots of things, but for now, this is an alternative to reading flecs.
+Teisu provides `peek()`, a function that allows you to read the value of whatever you give it. `peek()` is useful in most situations, but for now, this is an alternative to reading flecs.
 
 ```luau
 local Teisu = require(game.ReplicatedStorage.Teisu)
@@ -51,6 +51,14 @@ print(health()) --> 50
 print(peek(health)) --> 50
 ```
 
+Alternatively, flecs support an `updater` callback that allows you to transform a previous value into a new value:
+
+```luau
+health(function(old_health)
+    return old_health + 50
+end)
+```
+
 ::: tip Writing to a `flec` returns the value you gave it.
 
 You can edit a flec's value in the middle of calculations:
@@ -66,4 +74,3 @@ print(cool_number()) --> 4
 This is useful for making complex expressions. In most situations; however, it's best to keep your expressions simple.
 
 :::
-

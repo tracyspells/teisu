@@ -59,7 +59,7 @@ local test_scores = flec({
 })
 ```
 
-...and you would like to listen for additions or removals in your table. You can use `Teisu.observe` to accomplish this:
+And you would like to listen for additions or removals in your table. You can use `Teisu.observe` to accomplish this:
 
 ::: code-group
 
@@ -84,7 +84,7 @@ local disconnect = observe(test_scores, function(score: number, person: string)
     end
 end)
 
-test_score(function(old)
+test_scores(function(old)
     local new = table.clone(old)
     new["Ezekiel"] = 85
     return new
@@ -92,7 +92,7 @@ end)
 
 task.wait(2)
 
-test_score(function(old)
+test_scores(function(old)
     local new = table.clone(old)
     new["Alice"] = nil
     return new

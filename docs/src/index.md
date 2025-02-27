@@ -4,7 +4,7 @@ layout: home
 
 hero:
   name: "Teisu"
-  text: "A reactive library for Luau."
+  text: "A reactive library for Luau"
   actions:
     - theme: brand
       text: Get Started

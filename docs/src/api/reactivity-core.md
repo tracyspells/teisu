@@ -107,7 +107,8 @@ Tracks state changes in one or more dependencies read within the callback.
 type Cleanup = () -> ()
 
 function effect(callback: () -> ()): Cleanup
-function effect(callback: ( cleanup: Cleanup ) -> ()): Cleanup
+function effect(callback: ( dispose: () -> () ) -> ()): Cleanup
+function effect(callback: ( dispose: () -> (), cleanup: Cleanup ) -> ()): Cleanup
 ```
 
 ::: danger
@@ -122,9 +123,11 @@ Effects should <u>never delay</u>. You shouldn't use an `effect` when you need t
 
 `effect` returns a function that destroys the effect.
 
-**Example:**
+**Examples:**
 
-```luau
+::: code-group
+
+```luau [Example A]
 local source = flec("Hello, world!")
 local dispose = effect(function()
     print(`{source()}`)
@@ -134,9 +137,24 @@ source("Goodbye, world!") -- Goodbye, world!
 dispose() -- destroys the effect
 ```
 
-### Cleanups
+```luau [Example B]
+local condition = flec("good")
 
-A special `cleanup` function is passed in to the `effect` callback. Functions passed as an argument to this `cleanup` function will run:
+effect(function(dispose)
+    if condition() == "bad" then
+        print('destroying effect...')
+        dispose()
+    end
+end)
+
+task.wait(2)
+condition("bad") --> destroying effect...
+```
+:::
+
+### Schedule Changes
+
+A special `on_change` function is passed in to the `effect` callback. Functions passed as an argument to this `on_change` function will run:
 
 1. Before each re-invocation of the `effect` callback (i.e. when one or more dependencies change)
 2. When the `effect` itself is destroyed (if there were any functions scheduled, they will run on effect destruction)
@@ -145,8 +163,8 @@ A special `cleanup` function is passed in to the `effect` callback. Functions pa
 
 ```luau
 local count = flec(0)
-local dispose = effect(function(cleanup)
-    cleanup(function()
+local dispose = effect(function(dispose, on_change)
+    on_change(function()
         print("count has changed!")
     end)
 
@@ -155,7 +173,7 @@ end)
 
 count(count() + 1) -- prints `count has changed!`, and then `1`
 count(count() + 1) -- prints `count has changed!`, and then `2`
-dispose() -- will not print anything
+dispose() -- will not print anything, on_change functions have been cleaned up at this point
 ```
 
 
