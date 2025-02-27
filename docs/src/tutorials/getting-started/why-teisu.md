@@ -41,7 +41,7 @@ For Teisu, I wanted the library to meet the following requirements:
 
     You can use springs/tweens outside of UI!
 
-    ```luau [rising-cube.client.luau]
+    ```luau
     local Teisu = require(game.ReplicatedStorage.Teisu)
 
     local flec = Teisu.flec
@@ -54,8 +54,12 @@ For Teisu, I wanted the library to meet the following requirements:
     cube.CFrame = CFrame.new(0, 0, 0)
     cube.Parent = workspace
 
-    local cubeCFrame = flec(cube.CFrame)
-    local cubeSpring = spring(flec, 0.3)
+    local DEFAULT_CFRAME = cube.CFrame
+
+    local should_rise = flec(false)
+    local cubeSpring = spring(function()
+        return if should_rise() then DEFAULT_CFRAME * CFrame.new(0, 10, 0) else DEFAULT_CFRAME
+    end, 0.3)
     ```
 
 - Replicating state across the server-client boundary should be hassle free.

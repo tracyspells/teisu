@@ -67,7 +67,6 @@ Okay, that's cool and dandy, but what if you want your `props` to support state 
 
 Don't worry, we can use the `Derivable` type for this.
 
-
 ```luau {5-7}
 type Derivable<T> = Teisu.Derivable<T>
 
@@ -83,7 +82,8 @@ local function cheese(
 end
 ```
 
-Now with this implemented, you can use `peek()` to determine whether a property is a state object or not.
+You can think of `Derivable` properties as state objects. This means that `peek()` can be used to get a `Derivable` property's value:
+
 
 ```luau
 local peek = Teisu.peek
@@ -144,4 +144,48 @@ This type works best in situations where the property understands `nil` as a val
 
 :::
 
-In the next section, you'll learn how to make your components reactive.
+## Reactive Components
+
+Reactive components utilize flecs, computeds, and effects to ensure that your components work the way you want them to.
+
+Let's flesh out our `cheese` component from earlier:
+
+```luau
+local new = Teisu.new
+local cleanup = Teisu.cleanup
+local effect = Teisu.effect
+local action = Teisu.action
+
+local function cheese(
+    props: {
+        Size: Derivable<Vector3>,
+        Color: Derivable<Color3>,
+        IsStinky: Derivable<boolean>,
+    }
+)
+    effect(function()
+        -- the `true` argument passed in `peek` allows you to
+        -- get the value of `props.Size` while still tracking
+        -- it as a dependency
+
+        print(`cheese size changed to: {peek(props.Size, true)}`)
+    end)
+
+    return new "Part" {
+        Name = "Cheese",
+        Size = props.Size,
+
+        action(function(cheese: BasePart)
+            effect(function()
+                local is_stinky = peek(props.IsStinky, true)
+
+                cheese:SetAttribute("IsStinky", is_stinky)
+            end)
+        end)
+    }
+end
+```
+
+Doesn't this just look... *nice*?
+
+As stated in the beginning, components are the little pieces that make up the entire puzzle. You can reuse them anywhere!

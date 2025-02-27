@@ -43,17 +43,32 @@ export default defineConfig({
             { text: "Effects", link: "/tutorials/fundamentals/effects" },
             { text: "Observers", link: "/tutorials/fundamentals/observers" },
             { text: "Computeds", link: "/tutorials/fundamentals/computeds" },
+            { text: "Molecules", link: "/tutorials/fundamentals/molecules" },
           ]
         },
 
         {
-          text: "Roblox",
+          text: "Animation",
+          items: [
+            { text: "Springs", link: "/tutorials/animation/springs" },
+          ],
+        },
+
+        {
+          text: "UI",
           items: [
             { text: "Element Creation", link: "/tutorials/instances/element-creation" },
             { text: "Actions", link: "/tutorials/instances/actions" },
-            { text: "Detect Property Changes", link: "/tutorials/instances/property-changes" },
             { text: "Components", link: "/tutorials/instances/components" },
-            { text: "Reactive Components", link: "/tutorials/instances/reactive-components" },
+            { text: "Cleanup", link: "/tutorials/instances/cleanup" },
+            { text: "Building an App", link: "/tutorials/instances/building-an-app" },
+          ],
+        },
+
+        {
+          text: "Networking",
+          items: [
+            { text: "Server-Client Sync", link: "/tutorials/networking" },
           ],
         }
       ],

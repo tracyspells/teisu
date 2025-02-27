@@ -152,7 +152,31 @@ function server({
 
 -   `:hydrate(player)`: Sends the player a full state update for all synced flecs.
 
--   `:connect(player, callback)`: Registers a callback to send state updates to clients. The callback will receive the player and the payload to send, and should fire a remote event. The payload is read-only, so any changes should be applied to a copy of the payload.
+-   `:connect(callback)`: Registers a callback to send state updates to clients. The callback will receive the player and the payload to send, and should fire a remote event. The payload is read-only, so any changes should be applied to a copy of the payload.
+
+**Example:**
+
+```luau
+local remotes = require(ReplicatedStorage.Remotes)
+
+local flecs = {
+    points = flec(0),
+    game_ended = flec(false),
+}
+
+local syncer = Teisu.server({flecs = flecs })
+
+syncer:connect(function(player, payload)
+    -- send our initial state and state changes to the client
+    remotes.sync:fire(player, payload)
+end)
+
+remotes.hydrate:connect(function(player: Player)
+    -- our player has finished loading in on their end
+    -- let's register them
+    syncer:hydrate(player)
+end)
+```
 
 
 ## client()
@@ -183,3 +207,24 @@ Creates a client sync object. This synchronizes the client's flecs with the serv
 `client` returns an object with the following methods:
 
 -   `:sync(payload)`: Applies a state update from the server.
+
+**Example:**
+
+```luau
+local remotes = require(ReplicatedStorage.Remotes)
+
+local flecs = {
+    points = flec(0),
+    game_ended = flec(false),
+}
+
+local syncer = Teisu.client({flecs = flecs })
+
+-- receive state changes from the server and syncs them
+remotes.sync:connect(function(payload)
+    syncer:sync(payload)
+end)
+
+-- ...somewhere far away...
+remotes.hydrate:fire() -- let the server know that we loaded in
+```
