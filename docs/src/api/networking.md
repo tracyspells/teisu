@@ -154,6 +154,10 @@ function server({
 
 -   `:connect(callback)`: Registers a callback to send state updates to clients. The callback will receive the player and the payload to send, and should fire a remote event. The payload is read-only, so any changes should be applied to a copy of the payload.
 
+::: warning
+You only need to call `Teisu.server()` *once*.
+:::
+
 **Example:**
 
 ```luau
@@ -207,6 +211,11 @@ Creates a client sync object. This synchronizes the client's flecs with the serv
 `client` returns an object with the following methods:
 
 -   `:sync(payload)`: Applies a state update from the server.
+
+::: warning
+You only need to call `Teisu.client()` *once*.
+:::
+
 
 **Example:**
 

@@ -64,9 +64,6 @@ function computed<T>(callback: () -> T, equals: (T, T) -> boolean)
 
 `computed` will cache the result to prevent recomputations on every read.
 
-::: danger
-Computed calculations should be immediate and <u>never delay</u>. You should never use a `computed` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
-:::
 
 ### Parameters
 
@@ -77,6 +74,11 @@ Computed calculations should be immediate and <u>never delay</u>. You should nev
 ### Returns
 
 `computed` returns a read-only flec.
+
+::: danger
+Computed calculations should be immediate and <u>never delay</u>. You should never use a `computed` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
+:::
+
 
 **Example:**
 
@@ -111,10 +113,6 @@ function effect(callback: ( dispose: () -> () ) -> ()): Cleanup
 function effect(callback: ( dispose: () -> (), cleanup: Cleanup ) -> ()): Cleanup
 ```
 
-::: danger
-Effects should <u>never delay</u>. You shouldn't use an `effect` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
-:::
-
 ### Parameters
 
 -   `callback`: The function to track for state changes. The callback will run once to retrieve its dependencies, and then again whenever they change.
@@ -122,6 +120,10 @@ Effects should <u>never delay</u>. You shouldn't use an `effect` when you need t
 ### Returns
 
 `effect` returns a function that destroys the effect.
+
+::: danger
+Effects should <u>never delay</u>. You shouldn't use an `effect` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
+:::
 
 **Examples:**
 

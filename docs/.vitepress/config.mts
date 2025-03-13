@@ -32,7 +32,6 @@ export default defineConfig({
           text: "Getting Started",
           items: [
             { text: "Installation", link: "/tutorials/getting-started" },
-            { text: "Why Teisu?", link: "/tutorials/getting-started/why-teisu" },
           ]
         },
 
@@ -45,6 +44,13 @@ export default defineConfig({
             { text: "Computeds", link: "/tutorials/fundamentals/computeds" },
             { text: "Molecules", link: "/tutorials/fundamentals/molecules" },
           ]
+        },
+
+        {
+          text: "Transformers",
+          items: [
+            { text: "Mapped", link: "/tutorials/transformers/mapped" },
+          ],
         },
 
         {
@@ -61,7 +67,8 @@ export default defineConfig({
             { text: "Actions", link: "/tutorials/instances/actions" },
             { text: "Components", link: "/tutorials/instances/components" },
             { text: "Cleanup", link: "/tutorials/instances/cleanup" },
-            { text: "Building an App", link: "/tutorials/instances/building-an-app" },
+            { text: "Show", link: "/tutorials/instances/show" },
+            { text: "Switch", link: "/tutorials/instances/switch" },
           ],
         },
 

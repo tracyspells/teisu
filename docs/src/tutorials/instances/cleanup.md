@@ -1,4 +1,4 @@
-# Cleanups
+# Cleanup
 
 Teisu provides a `cleanup()` function for you to use in situations where you need to clean up side effects from `flec` updates or if you need to destroy a component.
 
@@ -39,7 +39,7 @@ end
 
 local connection = observer("joe")
 
-cleanup(connection)
+task.delay(2, cleanup, connection)
 ```
 
 ```luau [Output]
