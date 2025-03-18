@@ -95,6 +95,32 @@ local model = new "Model" {
 }
 ```
 
+Molecules that return an instance will be tracked with an `effect`:
+
+```luau
+local source = flec(true)
+
+local part = computed(function()
+    local should_display = source()
+
+    if should_display then
+        local part = Instance.new("Part")
+        part.Name = "Cool Part"
+        part.Size = Vector3.new(10, 10, 10)
+        part.Anchored = true
+
+        return part
+    end
+
+    return nil
+end)
+
+local model = new "Model" {
+    Name = "Container",
+    part,
+}
+```
+
 
 ## Events
 
