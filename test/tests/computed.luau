@@ -1,11 +1,18 @@
 local teisu = require("../../lib/init")
+local teisu_graph = require("../../lib/graph")
+local teisu_types = require("../../lib/types")
 local types = require("../types")
+local testkit = require("../testkit")
 
 local flec = teisu.flec
 local computed = teisu.computed
+local cleanup = teisu.cleanup
+local equals = testkit.seq
 
 type CASE = types.CASE
 type CHECK = types.CHECK
+
+type Node<T> = teisu_types.Node<T>
 
 return function(CASE: CASE, CHECK: CHECK)
 	do
@@ -61,6 +68,24 @@ return function(CASE: CASE, CHECK: CHECK)
 		end)
 
 		CHECK(quadruple() == 8)
+	end
+
+	do
+		CASE("can be cleaned up")
+
+		local source = flec("hello")
+		local uppercase = computed(function()
+			return string.upper(source())  
+		end)
+
+		local computed_node: Node<string> = uppercase(teisu_graph.NODE_KEY :: any) :: any
+
+		uppercase()
+		CHECK(not equals(computed_node.parents, {})) -- check if `uppercase`'s parents arent empty
+		cleanup(uppercase)
+		source("bye")
+		CHECK(uppercase() ~= source())
+		computed_node = nil :: never
 	end
 
 	do
