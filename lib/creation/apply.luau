@@ -78,7 +78,7 @@ do
 		local function dispose()
 			if not disconnected then
 				disconnected = true
-	
+
 				for parent in next, node.parents do
 					parent.children[node] = nil
 				end
