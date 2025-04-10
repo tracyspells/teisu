@@ -120,15 +120,36 @@ end
 
 type Create<Name, Instance> = ((Name, Props) -> Instance) & ((Name) -> (Props) -> Instance)
 
-local new_types = (
-	new :: any
-) :: & (<T>(T & Instance) -> (Props) -> T) & (<T>(T & Instance, Props) -> T) & Create<"Folder", Folder> & Create<"BillboardGui", BillboardGui> & Create<"CanvasGroup", CanvasGroup> & Create<"Frame", Frame> & Create<"ImageButton", ImageButton> & Create<"ImageLabel", ImageLabel> & Create<"ScreenGui", ScreenGui> & Create<"ScrollingFrame", ScrollingFrame> & Create<"SurfaceGui", SurfaceGui> & Create<"TextBox", TextBox> & Create<"TextButton", TextButton> & Create<"TextLabel", TextLabel> & Create<"UIAspectRatioConstraint", UIAspectRatioConstraint> & Create<"UICorner", UICorner> & Create<"UIGradient", UIGradient> & Create<"UIGridLayout", UIGridLayout> & Create<"UIListLayout", UIListLayout> & Create<"UIPadding", UIPadding> & Create<"UIPageLayout", UIPageLayout> & Create<"UIScale", UIScale> & Create<"UISizeConstraint", UISizeConstraint> & Create<"UIStroke", UIStroke> & Create<"UITableLayout", UITableLayout> & Create<
-	"UITextSizeConstraint",
-	UITextSizeConstraint
-> & Create<"VideoFrame", VideoFrame> & Create<
-	"ViewportFrame",
-	ViewportFrame
-> & Create<string, Instance>
+local new_types = (new :: any) :: 
+	& (<T>(T & Instance) -> (Props) -> T) 
+	& (<T>(T & Instance, Props) -> T) 
+	& Create<"Folder", Folder> 
+	& Create<"BillboardGui", BillboardGui> 
+	& Create<"CanvasGroup", CanvasGroup> 
+	& Create<"Frame", Frame> 
+	& Create<"ImageButton", ImageButton> 
+	& Create<"ImageLabel", ImageLabel> 
+	& Create<"ScreenGui", ScreenGui> 
+	& Create<"ScrollingFrame", ScrollingFrame> 
+	& Create<"SurfaceGui", SurfaceGui> 
+	& Create<"TextBox", TextBox> 
+	& Create<"TextButton", TextButton> 
+	& Create<"TextLabel", TextLabel> 
+	& Create<"UIAspectRatioConstraint", UIAspectRatioConstraint> 
+	& Create<"UICorner", UICorner> 
+	& Create<"UIGradient", UIGradient> 
+	& Create<"UIGridLayout", UIGridLayout> 
+	& Create<"UIListLayout", UIListLayout> 
+	& Create<"UIPadding", UIPadding> 
+	& Create<"UIPageLayout", UIPageLayout> 
+	& Create<"UIScale", UIScale> 
+	& Create<"UISizeConstraint", UISizeConstraint> 
+	& Create<"UIStroke", UIStroke> 
+	& Create<"UITableLayout", UITableLayout> 
+	& Create<"UITextSizeConstraint",UITextSizeConstraint> 
+	& Create<"VideoFrame", VideoFrame> 
+	& Create<"ViewportFrame", ViewportFrame> 
+	& Create<string, Instance>
 
 return table.freeze {
 	defaults = defaults,

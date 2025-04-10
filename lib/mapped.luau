@@ -10,10 +10,7 @@ type Node<T> = types.Node<T>
 type MappedConstructor =
 	(<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1)) -> Molecule<{ [K1]: V1 }>)
 	& (<K0, V0, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> V1?) -> Molecule<{ [K0]: V1 }>)
-	& (<K0, V0, K1, V1>(
-		subject: Molecule<{ [K0]: V0 }>,
-		mapper: (V0, K0) -> (V1?, K1?)
-	) -> Molecule<{ [K1]: V1 }>)
+	& (<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Molecule<{ [K1]: V1 }>)
 
 local createNode = graph.createDerivedNode
 local get_root_scope = graph.get_root_scope
