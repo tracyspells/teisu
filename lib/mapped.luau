@@ -76,7 +76,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 		for key, value in next, new_input do
 			local cache = mapped_cache[key]
 
-			if cache == nil then
+			if cache == nil then -- track additions
 				local destroy, result = root(function()
 					local newValue, newKey = mapper(value, key)
 					return { newValue or value, newKey or key } :: { K0 | K1 | V0 | V1 }
@@ -87,7 +87,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 					previous_value = value,
 					output = { key = result[2] :: K1, value = result[1] :: V1 },
 				}
-			elseif cache.previous_value ~= value then
+			elseif cache.previous_value ~= value then -- track changes
 				cache.previous_value = value
 				cache.destroy()
 
@@ -99,8 +99,6 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 				cache.destroy = destroy
 				cache.output.key = result[2] :: K1
 				cache.output.value = result[1] :: V1
-			else
-				-- do nothing
 			end
 		end
 
