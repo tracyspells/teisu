@@ -9,7 +9,8 @@ local flec = teisu.flec
 local observe = teisu.observe
 local mapped = teisu.mapped
 local root = teisu.root
-local cleanup = teisu.cleanup
+local new = teisu.new
+local effect = teisu.effect
 local castToNode = graph.castToReactable
 local equals = testkit.seq
 
@@ -88,10 +89,10 @@ return function(CASE: CASE, CHECK: CHECK)
 		
 		CHECK(new[1] == previous[1])
 		CHECK(new[1] == current[1])
-		CHECK(new[2] == previous[2])
-		CHECK(new[2] ~= current[2]) -- checks if new[2] is nil
+		CHECK(new[2] ~= previous[2]) -- checks if new[2] is nil
+		CHECK(new[2] ~= current[2]) -- similar to above comment
 		CHECK(new[3] == previous[3])
-		CHECK(new[3] ~= current[3]) -- similar to above comment
+		CHECK(new[3] ~= current[3]) -- similar to first comment
 	end
 
 	do
@@ -142,35 +143,67 @@ return function(CASE: CASE, CHECK: CHECK)
 	do
 		CASE("root() support")
 
-		local cleaned_up = false
 		local source = flec({ 1, 2, 3 })
 		local node = castToNode(source)
 
 		local unroot = root(function()
 			mapped(source, function(...)
 				return ...
-			end)
+			end)()
 		end)
 
-		CHECK(cleaned_up == false)
 		CHECK(node ~= nil and count(node.children) == 1)
-		cleanup(function() 
-			unroot()
-			cleaned_up = true
-		end) 
-		CHECK(cleaned_up == true)
+		unroot()
 		CHECK(node ~= nil and count(node.children) == 0)
 	end
 
 	do
-		CASE("can be cleaned up")
+		CASE("ui support")
 
-		local map = mapped(flec({ 1, 2, 3 }), function(...)
-			return ...
+		local source = flec({ 1, 2, 3 })
+
+		local function text_label(text: string)
+			return new "TextLabel" {
+				Text = text,
+			}
+		end
+
+		local unroot, result = root(function()  
+			local list
+			local map = mapped(source, function(number)
+				return text_label(`{number}`)
+			end)
+
+			effect(function()
+				list = map()
+			end)
+
+			return list
 		end)
 
-		CHECK(map() ~= nil)
-		cleanup(map)
-		CHECK(map() == nil)
+		CHECK(result ~= nil)
+
+		for index = 1, 3 do
+			local entry: TextLabel? = result[index] :: any
+
+			CHECK(entry ~= nil)
+			CHECK((entry :: TextLabel).Text == `{index}`)
+		end
+
+		source(function(old)
+			local new = table.clone(old)
+			new[3] = nil
+
+			return new
+		end)
+
+		for index = 1, 2 do
+			local entry: TextLabel? = result[index] :: any
+
+			CHECK(entry ~= nil)
+			CHECK((entry :: TextLabel).Text == `{index}`)
+		end
+
+		unroot()
 	end
 end
