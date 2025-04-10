@@ -1,3 +1,0 @@
-syntax = "Luau"
-call_parentheses = "NoSingleTable"
-collapse_simple_statement = "Never"
