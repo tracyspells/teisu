@@ -73,10 +73,10 @@ local function server(options: Options): Server
 	end
 
 	function self:connect(callback: (Player, SyncPayload) -> ())
-		local dispose = effect(function(cleanup)
+		local dispose = effect(function(_, on_change)
 			instance.current_snapshot = createSnapshot(flecs) :: any
 
-			cleanup(function()
+			on_change(function()
 				if instance.current_snapshot then
 					instance.previous_snapshot = table.clone(instance.current_snapshot) :: any
 				end

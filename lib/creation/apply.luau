@@ -1,6 +1,7 @@
 local types = require("@types/")
 local spring = require("@spring/")
 local action = require("@action/")
+local graph = require("@graph/")
 local effect = require("@effect/")
 local cleanup = require("@cleanup/")
 
@@ -8,6 +9,7 @@ type Map<K, V> = types.Map<K, V>
 type Array<T> = types.Array<T>
 type Set<T> = types.Set<T>
 
+type Node<T> = types.Node<T>
 type Molecule<T> = types.Molecule<T>
 
 type Cache = {
@@ -21,10 +23,6 @@ type Cache = {
 		(Instance) -> () -- action callbacks
 	>,
 
-	effects: Array<
-		() -> () -- cleanup function
-	>,
-
 	-- each nested layer occupies two indexes: 1. table ref 2. nested depth
 	-- e.g. { t1 = { t3 = {} }, t2 = {} } -> { t1, 1, t2, 1, t3, 2 }
 	nested_stack: { {} | number },
@@ -32,23 +30,29 @@ type Cache = {
 
 local is_spring = spring.is_spring
 local is_action = action.is_action
+local get_root_scope = graph.get_root_scope
+local push_to_root_scope = graph.push_to_root_scope
+local evaluate = graph.evaluate
 
 local implicit_effects
 do
 	local function property(instance: Instance, property: string, source: Molecule<unknown>)
-		return effect(function()
+		effect(function()
 			(instance :: any)[property] = source()
 		end)
 	end
 
 	local function parent(instance: Instance, source: Molecule<Instance>)
-		return effect(function()
+		effect(function()
 			instance.Parent = source()
 		end)
 	end
 
 	local function children(instance: Instance, source: Molecule<Instance | { Instance }>)
-		local dispose
+		local node: Node<any>
+		local owner = get_root_scope()
+
+		local disconnected = false
 		local new_children: Set<Instance>, prev_children: Set<Instance> = {}, {}
 
 		local function process_child(child: Instance | { Instance })
@@ -66,6 +70,18 @@ do
 				for _, c in next, child do
 					process_child(c)
 				end
+			elseif type(child) == "function" then
+				children(instance, child)
+			end
+		end
+
+		local function dispose()
+			if not disconnected then
+				disconnected = true
+
+				for parent in next, node.parents do
+					parent.children[node] = nil
+				end
 			end
 		end
 
@@ -79,7 +95,11 @@ do
 			dispose()
 		end
 
-		dispose = effect(function()
+		node = graph.createEagerNode(function()
+			if disconnected then
+				return
+			end
+
 			process_child(source())
 
 			for child in prev_children do
@@ -90,7 +110,11 @@ do
 			prev_children, new_children = new_children, prev_children
 		end)
 
-		return destroy
+		if owner then
+			push_to_root_scope(owner, node, destroy)
+		end
+
+		evaluate(node)
 	end
 
 	implicit_effects = table.freeze {
@@ -113,7 +137,6 @@ local function borrow_cache(): Cache
 		events = {},
 		actions = {},
 		nested_stack = {},
-		effects = {},
 	}
 end
 
@@ -133,10 +156,10 @@ local function process_properties(props: Map<unknown, unknown>, instance: Instan
 					table.insert(cache.events, key)
 					table.insert(cache.events, value :: () -> ())
 				else
-					table.insert(cache.effects, implicit_effects.property(instance, key, value :: Molecule<() -> ()>))
+					implicit_effects.property(instance, key, value :: Molecule<() -> ()>)
 				end
 			elseif is_spring(value) then
-				table.insert(cache.effects, implicit_effects.property(instance, key, value :: Molecule<() -> ()>))
+				implicit_effects.property(instance, key, value :: Molecule<() -> ()>)
 			else
 				(instance :: any)[key] = value -- set property
 			end
@@ -146,10 +169,7 @@ local function process_properties(props: Map<unknown, unknown>, instance: Instan
 			elseif is_action(value) then
 				table.insert(cache.actions, (value :: any)[1] :: (Instance) -> ())
 			elseif type(value) == "function" then
-				table.insert(
-					cache.effects,
-					implicit_effects.children(instance, value :: Molecule<Instance | { Instance }>)
-				)
+				implicit_effects.children(instance, value :: Molecule<Instance | { Instance }>)
 			elseif type(value) == "table" then
 				table.insert(cache.nested_stack, value :: {})
 				table.insert(cache.nested_stack, depth + 1)
@@ -166,7 +186,7 @@ return function<T>(instance: T & Instance, props: Map<unknown, unknown>?): T
 	local parent: unknown = props.Parent
 
 	local cache: Cache = borrow_cache()
-	local events, effects, actions = cache.events, cache.effects, cache.actions
+	local events, actions = cache.events, cache.actions
 	local nested_stack = cache.nested_stack
 
 	local depth = 1
@@ -175,10 +195,6 @@ return function<T>(instance: T & Instance, props: Map<unknown, unknown>?): T
 		depth = table.remove(nested_stack) :: number
 		props = table.remove(nested_stack) :: {}
 	until not props
-
-	for _, effect in next, effects do
-		cleanup(effect)
-	end
 
 	for i = 1, #events, 2 do
 		local event_name, listener = events[i], events[i + 1]
@@ -194,14 +210,13 @@ return function<T>(instance: T & Instance, props: Map<unknown, unknown>?): T
 
 	if parent then
 		if type(parent) == "function" then
-			cleanup(implicit_effects.parent(instance, parent :: Molecule<Instance>))
+			implicit_effects.parent(instance, parent :: Molecule<Instance>)
 		else
 			instance.Parent = parent :: Instance
 		end
 	end
 
 	table.clear(events)
-	table.clear(effects)
 	table.clear(actions)
 	table.clear(nested_stack)
 

@@ -11,12 +11,15 @@ type Cleanup = () -> ()
 
 local evaluate = graph.evaluate
 local createNode = graph.createEagerNode
+local get_root_scope = graph.get_root_scope
+local push_to_root_scope = graph.push_to_root_scope
 
-local function effect(callback: (cleanup: (Cleanup) -> ()) -> ()): Cleanup
+local function effect(callback: (dispose: Cleanup, on_change: (Cleanup) -> ()) -> ()): Cleanup
 	local node: Node<any>
 	local cleanups: { Cleanup } = {}
-
 	local disconnected = false
+	local evaluations = 0
+	local owner = get_root_scope()
 
 	local function add_to_cleanups(fn: Cleanup?)
 		if type(fn) ~= "function" or disconnected then
@@ -47,7 +50,7 @@ local function effect(callback: (cleanup: (Cleanup) -> ()) -> ()): Cleanup
 
 	local function dispose()
 		if not disconnected then
-			disconnected = true
+			disconnected, evaluations = true, nil :: never
 
 			for parent in next, node.parents do
 				parent.children[node] = nil
@@ -62,13 +65,21 @@ local function effect(callback: (cleanup: (Cleanup) -> ()) -> ()): Cleanup
 			return
 		end
 
-		peek(do_cleanup)
-		callback(add_to_cleanups)
+		evaluations += 1
+		if evaluations > 1 then
+			peek(do_cleanup)
+		end
+
+		callback(dispose, add_to_cleanups)
 	end)
+
+	if owner then
+		push_to_root_scope(owner, node, dispose)
+	end
 
 	evaluate(node)
 
 	return dispose
 end
 
-return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: (cleanup: (Cleanup) -> ()) -> ()) -> Cleanup)
+return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: (dispose: () -> ()) -> ()) -> Cleanup) & ((callback: (dispose: () -> (), on_change: (Cleanup) -> ()) -> ()) -> Cleanup)

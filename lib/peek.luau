@@ -7,12 +7,12 @@ local capturing = graph.capturing
 local new_scope = graph.new_scope
 local remove_scope = graph.remove_scope
 
-return function<T>(target: UsedAs<T>, force: boolean?): T
+return function<T>(target: UsedAs<T>, dont_untrack: boolean?): T
 	if typeof(target) ~= "function" then
 		return target :: T
 	end
 
-	if capturing.n == 0 or force == true then
+	if capturing.n == 0 or dont_untrack == true then
 		return target()
 	end
 

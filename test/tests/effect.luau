@@ -1,8 +1,11 @@
 local teisu = require("../../lib/init")
+local teisu_graph = require("../../lib/graph")
 local types = require("../types")
 
 local flec = teisu.flec
 local effect = teisu.effect
+local root = teisu.root
+local get_root_scope = teisu_graph.get_root_scope
 
 type CASE = types.CASE
 type CHECK = types.CHECK
@@ -68,14 +71,14 @@ return function(CASE: CASE, CHECK: CHECK)
 	end
 
 	do
-		CASE("cleanup effects")
+		CASE("cleanup on flec change")
 
 		local a = flec(0)
 
 		local cleanups = 0
 
-		local dispose = effect(function(cleanup)
-			cleanup(function() cleanups += 1 end)
+		local dispose = effect(function(_, on_change)
+			on_change(function() cleanups += 1 end)
 			a()
 		end)
 
@@ -106,6 +109,48 @@ return function(CASE: CASE, CHECK: CHECK)
 		a(2)
 		a(3)
 	end
+	
+	do
+		CASE("conditional cleanups")
+
+		local a = flec(false)
+		local destroyed = 0
+
+		effect(function(dispose)
+			if a() then
+				destroyed += 1
+				return dispose()
+			end
+		end)
+
+		a(false)
+		a(false)
+		a(true)
+		CHECK(destroyed == 1)
+		a(false)
+		a(true)
+		CHECK(destroyed == 1)
+	end
+
+	do
+		CASE("can be scheduled for deletion in root()")
+		
+		local root_scope
+
+		local destroy = root(function()
+			local a = flec(0)
+			root_scope = get_root_scope()
+			
+			effect(function()
+				a()
+			end)
+		end)
+
+		CHECK(root_scope ~= nil and root_scope.n == 1)
+		destroy()
+		CHECK(root_scope ~= nil and root_scope.n == nil)
+		root_scope = nil
+	end
 
 	do
 		CASE("effect lifecycles")
@@ -113,10 +158,10 @@ return function(CASE: CASE, CHECK: CHECK)
 		local mounted = false
 		local disposed = false
 
-		local dispose = effect(function(cleanup)
+		local dispose = effect(function(_, on_change)
 			mounted = true
 			
-			cleanup(function() 
+			on_change(function() 
 				disposed = true 
 			end)
 		end)

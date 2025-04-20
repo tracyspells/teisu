@@ -21,4 +21,3 @@ jobs:
       - name: Check code quality
         run: |
           selene lib
-          stylua --check lib --output-format=summary

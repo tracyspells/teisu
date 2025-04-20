@@ -253,6 +253,8 @@ local function updateDescendants(sourceNode: Node<any>)
 	for _, node in next, eagerNodes do
 		updateIfNecessary(node)
 	end
+
+	table.clear(eagerNodes)
 end
 
 return table.freeze {

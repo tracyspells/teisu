@@ -4,6 +4,7 @@ local types = require("../types")
 local flec = teisu.flec
 local batch = teisu.batch
 local subscribe = teisu.subscribe
+local computed = teisu.computed
 local effect = teisu.effect
 
 type CASE = types.CASE
@@ -72,7 +73,7 @@ return function(CASE: CASE, CHECK: CHECK)
 			a(5)
 		end)
 
-		CHECK(updates == 3)
+		CHECK(updates == 1)
 		CHECK(resultA == 5)
 		CHECK(resultB == 2)
 		CHECK(resultC == 4)
@@ -84,7 +85,7 @@ return function(CASE: CASE, CHECK: CHECK)
 			b(9)
 		end)
 
-		CHECK(updates == 5)
+		CHECK(updates == 2)
 		CHECK(resultA == 7)
 		CHECK(resultB == 9)
 		CHECK(resultC == 4)
@@ -128,7 +129,7 @@ return function(CASE: CASE, CHECK: CHECK)
 			c(3)
 		end)
 
-		CHECK(updates == 4)
+		CHECK(updates == 1)
 		CHECK(resultA == 2)
 		CHECK(resultB == 4)
 		CHECK(resultC == 3)
@@ -161,5 +162,64 @@ return function(CASE: CASE, CHECK: CHECK)
 		CHECK(updates == 3)
 		dispose_a()
 		dispose_b()
+	end
+
+	do
+		CASE("scenario: y-graph")
+
+		--[[
+
+                a     b
+                 ↘   ↙
+                   c
+                   ↓
+                   d
+        ]]
+
+		local a = flec(0)
+		local b = flec(0)
+
+		local effect_updates = 0
+		local c_updates, d_updates = 0, 0
+
+		local c = computed(function()
+			c_updates += 1
+
+			return a() * b()
+		end)
+
+		local d = computed(function()
+			d_updates += 1
+
+			return c() * 10
+		end)
+
+		local dispose = effect(function()
+			effect_updates += 1
+
+			d()
+			c()
+		end)
+
+		effect_updates, d_updates, c_updates = 0, 0, 0
+
+		batch(function()
+			a(a() + 1)
+			b(b() + 2) 
+		end)
+
+		CHECK(effect_updates == 1)
+		CHECK(c_updates == 1)
+		CHECK(d_updates == 1)
+		
+		batch(function()
+			a(a() + 1)
+		end)
+
+		CHECK(effect_updates == 2)
+		CHECK(c_updates == 2)
+		CHECK(d_updates == 2)
+
+		dispose()
 	end
 end

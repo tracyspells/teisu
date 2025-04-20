@@ -103,9 +103,6 @@ return table.freeze {
 	-- actions
 	action = action.action,
 	changed = action.changed,
-	input_began = action.input_began,
-	input_changed = action.input_changed,
-	input_ended = action.input_ended,
 
 	-- animations
 	spring = animation.spring,
