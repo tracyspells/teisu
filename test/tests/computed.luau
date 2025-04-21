@@ -7,6 +7,7 @@ local testkit = require("../testkit")
 local flec = teisu.flec
 local computed = teisu.computed
 local cleanup = teisu.cleanup
+local castToNode = teisu_graph.castToReactable
 local equals = testkit.seq
 
 type CASE = types.CASE
@@ -78,14 +79,30 @@ return function(CASE: CASE, CHECK: CHECK)
 			return string.upper(source())  
 		end)
 
-		local computed_node: Node<string> = uppercase(teisu_graph.NODE_KEY :: any) :: any
+		local source_node = castToNode(source)
+		local computed_node = castToNode(uppercase)
 
 		uppercase()
-		CHECK(not equals(computed_node.parents, {})) -- check if `uppercase`'s parents arent empty
+
+		if computed_node then
+            CHECK(not equals(computed_node.parents, {})) -- check if `uppercase`'s parents arent empty
+        end
+
 		cleanup(uppercase)
 		source("bye")
+
 		CHECK(uppercase() ~= source())
-		computed_node = nil :: never
+
+		if source_node then
+            CHECK(equals(source_node.children, {}))
+        end
+
+        if computed_node then
+            CHECK(equals(computed_node.parents, {}))
+        end
+
+		computed_node = nil
+		source_node = nil
 	end
 
 	do
