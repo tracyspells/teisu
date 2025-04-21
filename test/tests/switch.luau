@@ -1,5 +1,7 @@
 local teisu = require("../../lib/init")
+local teisu_graph = require("../../lib/graph")
 local types = require("../types")
+local testkit = require("../testkit")
 
 type CASE = types.CASE
 type CHECK = types.CHECK
@@ -9,6 +11,9 @@ local cleanup = teisu.cleanup
 local switch = teisu.switch
 local effect = teisu.effect
 local root = teisu.root
+local get_root_scope = teisu_graph.get_root_scope
+local castToNode = teisu_graph.castToReactable
+local equals = testkit.seq
 
 return function(CASE: CASE, CHECK: CHECK)
     do
@@ -40,6 +45,7 @@ return function(CASE: CASE, CHECK: CHECK)
         input(nil)
         CHECK(output() == nil)
         dispose()
+        cleanup(output)
     end
 
     do
@@ -74,11 +80,16 @@ return function(CASE: CASE, CHECK: CHECK)
         local changes = 0
 
         local input = flec(true)
+        local input_node = castToNode(input)
 
+        local root_scope
         local unroot, output = root(function()  
+            local output
+
+            root_scope = get_root_scope()
             cleanup(function() owner_count += 1 end)
 
-            return switch(input) {
+            output = switch(input) {
                 [true] = function()
                     cleanup(function() switch1_count += 1 end)
                     return 1
@@ -89,30 +100,52 @@ return function(CASE: CASE, CHECK: CHECK)
                     return 0
                 end
             }
-        end)
-    
-        local dispose = effect(function()
-            output()
-            changes += 1
+
+            effect(function()
+                output()
+                changes += 1
+            end)
+
+            return  output
         end)
 
+        local output_node = castToNode(output)
+    
         changes = 0
 
         CHECK(output() == 1)
+        
         input(false)
+
         CHECK(switch1_count == 1)
         CHECK(switch0_count == 0)
         CHECK(changes == 1)
+
         input(true)
+
         CHECK(switch1_count == 1)
         CHECK(switch0_count == 1)
         CHECK(changes == 2)
+
         input(nil :: never)
+
         CHECK(switch1_count == 2)
         CHECK(switch0_count == 1)
         CHECK(changes == 3)
-        dispose()
+
         unroot()
+
         CHECK(owner_count == 1)
+        CHECK(root_scope and root_scope.n == nil) -- checks if there are no entries left to cleanup
+
+        if input_node then
+            CHECK(equals(input_node.children, {}))
+        end
+
+        if output_node then
+            CHECK(equals(output_node.parents, {}))
+        end
+
+        input_node, output_node, root_scope = nil, nil, nil
     end
 end
