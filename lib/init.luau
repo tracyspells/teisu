@@ -2,7 +2,6 @@ local types = require("@types/")
 local animation = require("@animation/")
 local creation = require("@creation/")
 local sync = require("@sync/")
-local patch = require("@patch/")
 local action = require("@action/")
 local conditions = require("@conditions/")
 local flec = require("@flec/")
@@ -110,7 +109,7 @@ return table.freeze {
 	-- networking
 	client = sync.client,
 	server = sync.server,
-	is_none = patch.is_none,
+	is_none = sync.is_none,
 
 	-- runtime
 	step = function(deltaTime: number)

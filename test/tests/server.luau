@@ -68,6 +68,18 @@ return function(CASE: CASE, CHECK: CHECK)
             },
         }))
 
+        a({ b = 1 })
+        step(0.1)
+
+        CHECK(payload.type == "patch")
+        CHECK(equals(payload.data, {
+            {
+                op = "remove",
+                path = { "a", "d" },
+                value = { __none = "__none" },
+            },
+        }))
+
         disconnect()
     end
 end

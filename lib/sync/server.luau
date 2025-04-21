@@ -1,8 +1,9 @@
 local types = require("@types/")
 local patch = require("@patch/")
-local effect = require("@effect/")
+local subscribe = require("@subscribe/")
 
 type Set<T> = types.Set<T>
+type Array<T> = types.Array<T>
 type Cleanup = types.Cleanup
 type SyncPayload = types.SyncPayload
 
@@ -56,8 +57,6 @@ local function server(options: Options): Server
 		flecs = flecs,
 		players_connected = {},
 		players_to_hydrate = {},
-		previous_snapshot = nil,
-		current_snapshot = nil,
 		sync = nil,
 	}
 	server_instance = instance
@@ -73,33 +72,29 @@ local function server(options: Options): Server
 	end
 
 	function self:connect(callback: (Player, SyncPayload) -> ())
-		local dispose = effect(function(_, on_change)
-			instance.current_snapshot = createSnapshot(flecs) :: any
+		local connections = {}
 
-			on_change(function()
-				if instance.current_snapshot then
-					instance.previous_snapshot = table.clone(instance.current_snapshot) :: any
-				end
-			end)
+		instance.previous_snapshot = createSnapshot(flecs)
+		instance.current_snapshot = table.clone(instance.previous_snapshot)
 
-			if instance.previous_snapshot and instance.current_snapshot then
-				for key, prev_value in instance.previous_snapshot do
-					local curr_value = instance.current_snapshot[key]
-
-					if prev_value ~= curr_value then
-						instance.changes += 1
-					end
-				end
-			end
-		end)
+		for key, flec in flecs do
+			table.insert(connections, subscribe(flec, function(new)
+				instance.current_snapshot[key] = new  
+				instance.changes += 1
+			end))
+		end
 
 		instance.sync = callback :: any
 
 		return function()
-			dispose()
+			for i = #connections, 1, -1 do
+				local disconnect = connections[i]
+				disconnect()
+			end
+
+			table.clear(connections)
 
 			if not game then
-				table.clear(instance.players_connected)
 				table.clear(instance.players_connected)
 			end
 		end
@@ -155,14 +150,17 @@ local function step()
 		end
 
 		local delta = diff(server_instance.previous_snapshot, server_instance.current_snapshot)
-		server_instance.changes = 0
-
+	
 		for player in server_instance.players_connected do
 			if server_instance.players_to_hydrate[player] then
 				continue
 			end
+
 			server_instance.sync(player, { type = "patch", data = delta :: any })
 		end
+
+		server_instance.changes = 0
+		server_instance.previous_snapshot = table.clone(server_instance.current_snapshot)
 	end
 end
 
