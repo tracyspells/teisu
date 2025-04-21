@@ -30,8 +30,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 			output: { key: K1, value: V1 },
 			destroy: () -> (),
 		},
-	} =
-		{}
+	} = {}
 
 	local cleaned_up = false
 	local cleanup = function()
@@ -45,14 +44,17 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 			parent.children[node] = nil
 		end
 
+		table.clear(node.parents)
+
 		-- remove deleted values from the cache
 		for key, cache in next, mapped_cache do
 			if cache and cache.destroy then
 				cache.destroy()
+				cache.destroy = nil :: never
 			end
-
-			mapped_cache[key] = nil
 		end
+
+		table.clear(mapped_cache)
 	end
 
 	node = createNode(function()

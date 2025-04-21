@@ -146,15 +146,17 @@ return function(CASE: CASE, CHECK: CHECK)
 		local source = flec({ 1, 2, 3 })
 		local node = castToNode(source)
 
-		local unroot = root(function()
-			mapped(source, function(...)
+		local unroot, output = root(function()
+			return mapped(source, function(...)
 				return ...
-			end)()
+			end)
 		end)
 
+		output()
 		CHECK(node ~= nil and count(node.children) == 1)
 		unroot()
 		CHECK(node ~= nil and count(node.children) == 0)
+		node = nil
 	end
 
 	do
