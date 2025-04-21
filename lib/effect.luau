@@ -56,6 +56,9 @@ local function effect(callback: (dispose: Cleanup, on_change: (Cleanup) -> ()) -
 				parent.children[node] = nil
 			end
 
+			table.clear(node.parents)
+			node = nil :: never
+
 			peek(do_cleanup)
 		end
 	end
