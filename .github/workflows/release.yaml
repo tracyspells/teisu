@@ -21,7 +21,7 @@ jobs:
           lune run publishing
       
       - name: Login to Wally
-        run: wally login --token ${{ secrets.WALLY_AUTH }}
+        run: wally login --project-path dist/ --token ${{ secrets.WALLY_AUTH }}
 
       - name: Publish package to Wally
         run: wally publish -v --project-path dist/
