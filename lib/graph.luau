@@ -38,6 +38,10 @@ local function push_scope(scope: Scope): number
 end
 
 local function remove_scope(index: number)
+	if capturing[index] == nil then
+		return
+	end
+
 	local n = index - 1
 	capturing.n = n
 	capturing[index] = nil
@@ -158,6 +162,55 @@ local function isSourceNode(value: any): (boolean, Node<any>?)
 	return node.eager == nil and node.effect == false, node
 end
 
+local function try<T...>(
+	callback: (T...) -> (),
+	on_error: () -> (),
+	on_success: () -> (),
+	...: T...
+)
+	if flags.strict then
+		local thread = coroutine.create(callback, ...)
+		local ok, result: string? = coroutine.resume(thread)
+
+		if coroutine.status(thread) == "suspended" then
+			local source: string, line: number, name: string = debug.info(callback, "sln")
+
+			coroutine.close(thread)
+			on_error()
+
+			error(
+				"Cannot yield inside a reactive function. Consider wrapping this code in a Promise, task.spawn, or task.defer instead."
+					.. `\nFunction defined at: {source}:{line}`
+					.. if name == "" then "" else ` function {name}`
+			)
+			return
+		elseif not ok then
+			local source: string, line: number, name: string = debug.info(callback, "sln")
+			on_error()
+
+			error(
+				"An error occurred while running an reactive function"
+					.. `\nFunction defined at: {source}:{line}`
+					.. (if name == "" then "" else ` function {name}`)
+					.. `\nError: {result}`
+			)
+			return
+		end
+
+		on_success()
+	else
+		local ok, message: string? = pcall(callback, ...)
+
+		if not ok then
+			on_error()
+			error(message)
+			return
+		end
+
+		on_success()
+	end
+end
+
 local function update<T>(node: Node<T>)
 	-- sever ties with this node's parents
 	for parent in next, node.parents do
@@ -166,21 +219,24 @@ local function update<T>(node: Node<T>)
 	end
 
 	local effect = node.effect :: (() -> ()) | false
-	if effect ~= false then
+	if type(effect) == "function" then
 		local parents: Set<Node<any>> = {}
 		local index = push_scope(parents)
 
-		local ok, message: string? = xpcall(effect :: () -> (), debug.traceback)
+		try(
+			effect, 
+			function() 
+				remove_scope(index)
+				parents = nil :: never
+			end,
+			function() 
+				remove_scope(index)
 
-		remove_scope(index)
-
-		if not ok then
-			error(message)
-		end
-
-		for parent in next, parents do
-			establishBonds(node, parent)
-		end
+				for parent in next, parents do
+					establishBonds(node, parent)
+				end
+			end
+		)
 	end
 
 	for child in next, node.children do
@@ -262,6 +318,8 @@ return table.freeze {
 	capturing = capturing,
 	batched = batched,
 
+	try = try,
+	
 	push_scope = push_scope,
 	new_scope = new_scope,
 	remove_scope = remove_scope,

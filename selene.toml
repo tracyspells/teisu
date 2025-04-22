@@ -1,5 +1,5 @@
 std = "selene-std+luau"
-exclude = ["dist/**"]
+exclude = ["dist/**", ".lune/**"]
 
 [lints]
 global_usage = "allow"

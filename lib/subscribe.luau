@@ -1,4 +1,5 @@
 local types = require("@types/")
+local patch = require("@patch/")
 local effect = require("@effect/")
 local peek = require("@peek/")
 
@@ -7,7 +8,8 @@ type Cleanup = () -> ()
 type Listener<T> = (T, T) -> ()
 type NONE = types.NONE
 
-local NONE = { __none = "__none" }
+local NONE = patch.NONE
+local is_none = patch.is_none
 
 return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
 	local old: T | NONE = NONE :: any
@@ -23,7 +25,7 @@ return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
 			old = new
 		end)
 
-		if (old ~= NONE and new ~= NONE) and new ~= old then
+		if (not is_none(old) and not is_none(new)) and new ~= old then
 			peek(function()
 				listener(new, old :: T)
 				return nil

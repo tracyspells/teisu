@@ -1,8 +1,30 @@
 local process = require("@lune/process")
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
+local darkluaConfigTemplate = require("templates/darklua")
+local luaurcConfigTemplate = require("templates/luaurc")
 local path = require("utils/path")
 local StringBuilder = require("utils/string-builder")
+
+type ConvertRequire = {
+	current: {
+		name: "path",
+		sources: { [string]: string },
+	},
+	rule: "convert_require",
+	target: {
+		indexing_style: "property",
+		name: "roblox",
+		rojo_sourcemap: "./sourcemap.json",
+	},
+}
+
+type LuaurcConfig = {
+	languageMode: ("strict" | "nonstrict"),
+	lint: { [string]: boolean },
+	globals: { string },
+	aliases: { [string]: string },
+}
 
 local readDir, isDir = fs.readDir, fs.isDir
 local readFile, writeFile, isFile = fs.readFile, fs.writeFile, fs.isFile
@@ -18,28 +40,8 @@ local ALIASES_KEYS_TO_EXCLUDE = {
 local function regen()
 	local luaurc = decode("json", readFile(PATH_LUAURC)) :: LuaurcConfig
 
-	local darkluaConfig = table.clone(require("./templates/darklua"))
-	local luaurcConfig = table.clone(require("./templates/luaurc"))
-
-	type ConvertRequire = {
-		current: {
-			name: "path",
-			sources: { [string]: string },
-		},
-		rule: "convert_require",
-		target: {
-			indexing_style: "property",
-			name: "roblox",
-			rojo_sourcemap: "./sourcemap.json",
-		},
-	}
-
-	type LuaurcConfig = {
-		languageMode: ("strict" | "nonstrict"),
-		lint: { [string]: boolean },
-		globals: { string },
-		aliases: { [string]: string },
-	}
+	local darkluaConfig = table.clone(darkluaConfigTemplate)
+	local luaurcConfig = table.clone(luaurcConfigTemplate)
 
 	local aliases = {}
 	aliases["testkit"] = "test/testkit"
