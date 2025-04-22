@@ -102,6 +102,8 @@ local function apply<K, V>(state: { [K]: V }, patches: { Patch<K, V> })
 end
 
 return table.freeze {
+	NONE = NONE,
+
 	diff = diff,
 	apply = apply,
 	is_none = is_none,
