@@ -4,6 +4,7 @@ local creation = require("@creation/")
 local sync = require("@sync/")
 local action = require("@action/")
 local conditions = require("@conditions/")
+local flags = require("@flags/")
 local flec = require("@flec/")
 local subscribe = require("@subscribe/")
 local effect = require("@effect/")
@@ -23,6 +24,8 @@ export type Spring<T> = types.Spring<T>
 export type spring<T> = Spring<T>
 export type SyncPayload = types.SyncPayload
 export type sync_payload = SyncPayload
+export type Animatable = types.Animatable
+export type animatable = Animatable
 
 local update_springs = animation.step_springs()
 local update_server = sync.step_server()
@@ -70,6 +73,14 @@ local function apply(instance: Instance)
 	end
 end
 
+local function strict(value: boolean?): boolean
+	if value ~= nil then
+		flags.strict = value
+	end
+
+	return flags.strict
+end
+
 stepped = is_game and game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
 	on_step(deltaTime)
 end)
@@ -110,6 +121,9 @@ return table.freeze {
 	client = sync.client,
 	server = sync.server,
 	is_none = sync.is_none,
+
+	-- flags
+	strict = strict,
 
 	-- runtime
 	step = function(deltaTime: number)

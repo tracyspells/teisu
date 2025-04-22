@@ -47,6 +47,10 @@ export type Patch<K, V> = {
 	value: V | NONE,
 }
 
+export type Animatable = 
+	number | boolean | UDim | UDim2 | Rect | Vector2 | Vector3 | CFrame | Color3 
+	| NumberRange | NumberSequenceKeypoint | ColorSequenceKeypoint
+
 export type SyncPayload = {
 	type: "init",
 	data: { [string | number]: any },
