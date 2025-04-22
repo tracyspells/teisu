@@ -12,6 +12,8 @@ type Node<T> = teisu_types.Node<T>
 local flec = teisu.flec
 local show = teisu.show
 local cleanup = teisu.cleanup
+local root = teisu.root
+local get_root_scope = teisu_graph.get_root_scope
 local castToNode = teisu_graph.castToReactable
 local equals = testkit.seq
 
@@ -44,24 +46,45 @@ return function(CASE: CASE, CHECK: CHECK)
     end
 
     do
-		CASE("can be cleaned up")
+        CASE("root() cleanup test")
+        local one = function() return 1 end
+
+		local input = flec(true)
+
+        local root_scope
+        local unroot, output = root(function()  
+            root_scope = get_root_scope()
+
+            return show(input, one)
+        end)
+
+        
+        CHECK(root_scope and root_scope.n == 1)
+        output() -- create a root scope internally
+        unroot()
+        CHECK(root_scope and root_scope.n == nil)
+        root_scope = nil
+    end
+
+    do
+		CASE("cleanup() test")
 
         local one = function() return 1 end
 
-		local source = flec(false)
+		local source = flec(true)
         local source_node = castToNode(source)
 		
         local output = show(source, one)
 		local computed_node = castToNode(output)
 
-        output()
+        output() -- create a root scope internally
 
         if computed_node then
             CHECK(not equals(computed_node.parents, {})) -- check if `output`'s parents arent empty
         end
         
 		cleanup(output)
-        source(true)
+        source(false)
         
         CHECK(output() == nil)
 
