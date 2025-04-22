@@ -21,8 +21,12 @@ jobs:
           lune run publishing
       
       - name: Login to Wally
-        run: wally login --project-path dist/ --token ${{ secrets.WALLY_AUTH }}
-
+        env: 
+          WALLY_AUTH: ${{ secrets.WALLY_AUTH }}
+        run: |
+          mkdir -p ~/.wally
+          echo "$WALLY_AUTH" > ~/.wally/auth.toml
+       
       - name: Publish package to Wally
         run: wally publish -v --project-path dist/
 
