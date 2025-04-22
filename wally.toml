@@ -8,4 +8,4 @@ description = "Reactive library for Roblox"
 repository = "https://github.com/tracyspells/teisu"
 homepage = "https://tracyspells.github.io/teisu/"
 exclude = ["**"]
-include = ["lib", "lib/**/*.luau", "wally.toml", "default.project.json", "LICENSE"]
+include = ["lib", "lib/*", "wally.toml", "default.project.json", "LICENSE"]
