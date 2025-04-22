@@ -77,26 +77,28 @@ local function root<T...>(fn: () -> T...): (Cleanup, T...)
 		already_queued = {},
 		n = 0,
 	} :: RootScope
-	local index = push_scope(scope)
-
+	
 	local destroyed = false
 	local destroy = function()
 		if destroyed then
 			error(`root already destroyed`)
 		end
 
-		for index = scope.n, 1, -1 do
-			local fn = scope[index]
-			if not fn then
-				continue
+		if scope.n > 0 then
+			for i = scope.n, 1, -1 do
+				local fn = scope[i]
+				if not fn then
+					continue
+				end
+				fn()
 			end
-			fn()
 		end
-
+		
 		table.clear(scope)
 		destroyed = true
 	end
 
+	local index = push_scope(scope)
 	local result = { xpcall(fn, debug.traceback) }
 
 	remove_scope(index)

@@ -38,6 +38,10 @@ local function push_scope(scope: Scope): number
 end
 
 local function remove_scope(index: number)
+	if capturing[index] == nil then
+		return
+	end
+
 	local n = index - 1
 	capturing.n = n
 	capturing[index] = nil
