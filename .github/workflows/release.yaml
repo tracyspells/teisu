@@ -15,6 +15,7 @@ jobs:
 
       - name: Build needed files
         run: |
+          mkdir -p dist 
           lune run regen
           lune run build
           lune run publishing
