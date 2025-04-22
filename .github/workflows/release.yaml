@@ -13,24 +13,22 @@ jobs:
       - name: Install Rokit
         uses: CompeyDev/setup-rokit@v0.1.2
 
-      - name: Install packages
-        run: wally install
-
-      - name: Publish Wally package
+      - name: Build needed files
         run: |
-          mkdir -p ~/.wally
-          echo "$WALLY_AUTH" > ~/.wally/auth.toml
-          wally publish
-        env:
-          WALLY_AUTH: ${{ secrets.WALLY_AUTH }}
+          lune run regen
+          lune run build
+          lune run publishing
+      
+      - name: Login to Wally
+        run: wally login --token ${{ secrets.WALLY_AUTH }}
 
-      - name: Build package
-        run: rojo build --output teisu.rbxm
+      - name: Publish package to Wally
+        run: wally publish -v --project-path dist/
 
       - name: Upload release
         uses: softprops/action-gh-release@v2
         if: ${{ github.event.release }}
         with:
-          files: teisu.rbxm
+          files: dist/teisu.rbxm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
