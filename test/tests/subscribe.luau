@@ -4,10 +4,12 @@ local types = require("../types")
 local flec = teisu.flec
 local subscribe = teisu.subscribe
 
+type SKIP = types.SKIP
 type CASE = types.CASE
 type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
 
-return function(CASE: CASE, CHECK: CHECK)
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
 	do
 		CASE("returns cleanup function")
 

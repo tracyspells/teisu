@@ -1,15 +1,17 @@
 local teisu = require("../../lib/init")
 local types = require("../types")
 
-type CASE = types.CASE
-type CHECK = types.CHECK
-
 local root = teisu.root
 local flec = teisu.flec
 local effect = teisu.effect
 local cleanup = teisu.cleanup
 
-return function(CASE: CASE, CHECK: CHECK)
+type SKIP = types.SKIP
+type CASE = types.CASE
+type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
+
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
     do
         CASE("validate")
         local unroot = root(function()

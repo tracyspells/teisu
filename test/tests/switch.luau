@@ -3,9 +3,6 @@ local teisu_graph = require("../../lib/graph")
 local types = require("../types")
 local testkit = require("../testkit")
 
-type CASE = types.CASE
-type CHECK = types.CHECK
-
 local flec = teisu.flec
 local cleanup = teisu.cleanup
 local switch = teisu.switch
@@ -15,7 +12,12 @@ local get_root_scope = teisu_graph.get_root_scope
 local castToNode = teisu_graph.castToReactable
 local equals = testkit.seq
 
-return function(CASE: CASE, CHECK: CHECK)
+type SKIP = types.SKIP
+type CASE = types.CASE
+type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
+
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
     do
         CASE("update on source change")
 
@@ -146,6 +148,6 @@ return function(CASE: CASE, CHECK: CHECK)
             CHECK(equals(output_node.parents, {}))
         end
 
-        input_node, output_node, root_scope = nil, nil, nil
+        --input_node, output_node, root_scope = nil, nil, nil
     end
 end

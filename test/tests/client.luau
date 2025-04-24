@@ -1,16 +1,17 @@
 local teisu = require("../../lib/init")
 local types = require("../types")
-
-type CASE = types.CASE
-type CHECK = types.CHECK
-
-type SyncPayload = teisu.SyncPayload
-
 local client = teisu.client
 local flec = teisu.flec
 local subscribe = teisu.subscribe
 
-return function(CASE: CASE, CHECK: CHECK)
+type SyncPayload = teisu.SyncPayload
+
+type SKIP = types.SKIP
+type CASE = types.CASE
+type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
+
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
     do
         CASE("syncs state payload")
 

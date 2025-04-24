@@ -1,39 +1,46 @@
 --------------------------------------------------------------------------------
 -- testkit.luau
 -- v0.7.3
+-- MIT License
+-- Copyright (c) 2022 centau
 --------------------------------------------------------------------------------
 
+local ansi_enabled = true
 local color = {
 	white_underline = function(s: string)
-		return `\27[1;4m{s}\27[0m`
+		return if ansi_enabled then `\27[1;4m{s}\27[0m` else s
 	end,
 
 	white = function(s: string)
-		return `\27[37;1m{s}\27[0m`
+		return if ansi_enabled then `\27[37;1m{s}\27[0m` else s
 	end,
 
 	green = function(s: string)
-		return `\27[32;1m{s}\27[0m`
+		return if ansi_enabled then `\27[32;1m{s}\27[0m` else s
 	end,
 
 	red = function(s: string)
-		return `\27[31;1m{s}\27[0m`
+		return if ansi_enabled then `\27[31;1m{s}\27[0m` else s
 	end,
 
 	yellow = function(s: string)
-		return `\27[33;1m{s}\27[0m`
+		return if ansi_enabled then `\27[33;1m{s}\27[0m` else s
 	end,
 
 	red_highlight = function(s: string)
-		return `\27[41;1;30m{s}\27[0m`
+		return if ansi_enabled then `\27[41;1;30m{s}\27[0m` else s
 	end,
 
 	green_highlight = function(s: string)
-		return `\27[42;1;30m{s}\27[0m`
+		return if ansi_enabled then `\27[42;1;30m{s}\27[0m` else s
 	end,
 
 	gray = function(s: string)
-		return `\27[30;1m{s}\27[0m`
+		return if ansi_enabled then `\27[30;1m{s}\27[0m` else s
+	end,
+
+	orange = function(s: string): string
+		return if ansi_enabled then `\27[38;5;208m{s}\27[0m` else s
 	end,
 }
 
@@ -96,32 +103,49 @@ type Test = {
 	case: Case?,
 	cases: { Case },
 	duration: number,
+	focus: boolean,
 	error: {
 		message: string,
 		trace: string,
 	}?,
+	fn: () -> (),
 }
 
 type Case = {
 	name: string,
+	focus: boolean,
 	result: number,
 	line: number?,
 }
 
-local PASS, FAIL, NONE, ERROR = 1, 2, 3, 4
+local PASS, FAIL, NONE, ERROR, SKIPPED = 1, 2, 3, 4, 5
 
 local STATUSES = {
 	[PASS] = color.green("PASS"),
 	[FAIL] = color.red("FAIL"),
-	[NONE] = color.yellow("NONE"),
+	[NONE] = color.orange("NONE"),
 	[ERROR] = color.red("FAIL"),
+	[SKIPPED] = color.yellow("SKIPPED")
 }
 
-local skip: string?
+local check_for_focused = false
+local skip = false
 local test: Test?
 local tests: { Test } = {}
 
 local function output_test_result(test: Test)
+	if check_for_focused then
+		local any_focused = test.focus
+		
+		for _, case in test.cases do
+			any_focused = any_focused or case.focus
+		end
+
+		if not any_focused then
+			return
+		end
+	end
+
 	print(color.white(test.name))
 
 	for _, case in next, test.cases do
@@ -140,6 +164,7 @@ local function output_test_result(test: Test)
 end
 
 local function CASE(name: string)
+	skip = false
 	assert(test, "no active test")
 
 	local case = {
@@ -147,8 +172,8 @@ local function CASE(name: string)
 		result = NONE,
 	}
 
-	test.case = case
-	table.insert(test.cases, case)
+	test.case = case :: Case
+	table.insert(test.cases, case :: Case)
 end
 
 local function CHECK<T>(value: T, stack: number?): T
@@ -164,60 +189,119 @@ local function CHECK<T>(value: T, stack: number?): T
 
 	if case.result ~= FAIL then
 		case.result = value and PASS or FAIL
+
+		if skip then
+			case.result = SKIPPED
+		end
+
 		case.line = debug.info(stack and stack + 1 or 2, "l")
 	end
 
 	return value
 end
 
-local function TEST(name: string, fn: () -> ())
-	if skip and name ~= skip then
-		return
+local function CHECK_EXPECT_ERROR<T..., U...>(fn: (T...) -> U..., ...: T...)
+	assert(test, "no active test")
+	
+	local case = test.case
+	
+	if not case then
+		CASE("")
+		case = test.case
 	end
 
-	local active = test
-	assert(not active, "cannot start test while another test is in progress")
+	assert(case, "no active case")
 
+	if case.result ~= FAIL then
+		local ok = pcall(fn, ...)
+		case.result = if ok then FAIL else PASS
+		
+		if skip then
+			case.result = SKIPPED
+		end
+
+		case.line = debug.info(2, "l")
+	end
+end
+
+local test_focused = false
+
+local function FOCUS()
+	check_for_focused = true
+	test_focused = false
+end
+
+local function TEST(name: string, fn: () -> ())
 	test = {
 		name = name,
 		cases = {},
 		duration = 0,
+		focus = false,
+		fn = fn
 	}
-	assert(test)
 
-	table.insert(tests, test)
+	local t = test
 
-	local start = os.clock()
-	local err
-	local success = xpcall(fn, function(m: string)
-		err = { message = m, trace = debug.traceback(nil, 2) }
-	end)
-	test.duration = os.clock() - start
-
-	if not test.case then
-		CASE("")
+	if check_for_focused and not test_focused then
+		(test :: Test).focus = true
+		test_focused = true
 	end
-	assert(test.case, "no active case")
-
-	if not success then
-		test.case.result = ERROR
-		test.error = err
-	end
-
-	test = nil
+	table.insert(tests, (t :: Test))
 end
 
 local function FINISH(): boolean
 	local success = true
 	local total_cases = 0
 	local passed_cases = 0
+	local passed_focus_cases = 0
+	local total_focus_cases = 0
 	local duration = 0
+
+	for _, t in tests do
+		if check_for_focused and not t.focus then
+			continue
+		end
+
+		test = t
+
+		local fn = t.fn
+		local start = os.clock()
+		local err
+		local ok = xpcall(fn, function(m: string)
+			err = { message = m, trace = debug.traceback(nil, 2) }
+		end)
+
+		t.duration = os.clock() - start
+
+		if not t.case then
+			CASE("")
+		end
+		assert(t.case, "no active case")
+
+		if not ok then
+			t.case.result = ERROR
+			t.error = err
+		end
+
+		collectgarbage("collect" :: any)
+	end
 
 	for _, test in tests do
 		duration += test.duration
+
 		for _, case in test.cases do
 			total_cases += 1
-			if case.result == PASS or case.result == NONE then
+
+			if case.focus or test.focus then
+				total_focus_cases += 1
+			end
+
+			if case.result == PASS or case.result == NONE or case.result == SKIPPED then
+				
+				if case.focus or test.focus then
+					passed_focus_cases += 1
+				end
+
 				passed_cases += 1
 			else
 				success = false
@@ -228,17 +312,22 @@ local function FINISH(): boolean
 	end
 
 	print(color.gray(string.format(`{passed_cases}/{total_cases} test cases passed in %.3f ms.`, duration * 1e3)))
+	if check_for_focused then
+		print(color.gray(`{passed_focus_cases}/{total_focus_cases} focused test cases passed`))
+	end
 
 	local fails = total_cases - passed_cases
 
 	print((fails > 0 and color.red or color.green)(`{fails} {fails == 1 and "fail" or "fails"}`))
 
-	return success, table.clear(tests)
+	check_for_focused = false
+	table.clear(tests)
+	test = nil
+	return success, math.clamp(fails, 0, 1)
 end
 
-local function SKIP(name: string)
-	assert(not test, "cannot skip during test")
-	skip = name
+local function SKIP()
+	skip = true
 end
 
 --------------------------------------------------------------------------------
@@ -458,11 +547,27 @@ end
 
 return {
 	test = function()
-		return TEST, CASE, CHECK, FINISH, SKIP
+		return {
+			TEST = TEST,
+			CASE = CASE,
+			CHECK = CHECK,
+			CHECK_EXPECT_ERROR = CHECK_EXPECT_ERROR,
+			FINISH = FINISH,
+			FOCUS = FOCUS,
+			SKIP = SKIP,
+		}
 	end,
 
 	benchmark = function()
 		return BENCH, START
+	end,
+
+	ansi = function(value: boolean?)
+		if value ~= nil then
+			ansi_enabled = value
+		end
+
+		return ansi_enabled
 	end,
 
 	print = print2,

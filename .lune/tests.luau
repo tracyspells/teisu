@@ -14,35 +14,41 @@ type TESTS = test_types.TESTS
 local readDir = fs.readDir
 local isFile = fs.isFile
 
-local TEST, CASE, CHECK, FINISH = testkit.test()
+local kit = testkit.test()
+local TEST, CASE, FINISH, SKIP = kit.TEST, kit.CASE, kit.FINISH, kit.SKIP
+local CHECK, CHECK_EXPECT_ERROR = kit.CHECK, kit.CHECK_EXPECT_ERROR
 
 local DIRECTORY = path(process.cwd, "test", "tests")
 
 local function TITLE(name: string)
-    print(`\n` .. testkit.color.white_underline(name) .. `\n`)
+	print(`\n` .. testkit.color.white_underline(name) .. `\n`)
 end
 
-local tests: TESTS = {} do
-    for _, entry in next, readDir(DIRECTORY) do
-        local filePath = `{DIRECTORY}/{entry}`
-        local testName = string.gsub(entry, ".luau", "")
+local tests: TESTS = {}
 
-        if not isFile(filePath) then
-            continue
-        end
-        
-        table.insert(tests, { name = testName, fn = require(filePath) :: TEST_FN})
-    end
+for _, entry in next, readDir(DIRECTORY) do
+	local filePath = `{DIRECTORY}/{entry}`
 
-    table.sort(tests, function(a, b)
-        return string.upper(a.name) < string.upper(b.name)
-    end)
+	if not isFile(filePath) then
+		continue
+	end
+
+	local testName = string.gsub(entry, ".luau", "")
+	local test_fn = require(filePath) :: TEST_FN
+
+	table.insert(tests, { name = testName, fn = test_fn })
 end
 
-TITLE "RESULTS:"
+table.sort(tests, function(a, b)
+	return string.upper(a.name) < string.upper(b.name)
+end)
 
 for _, test in tests do
-    TEST(test.name, function() test.fn(CASE, CHECK) end)
+	TEST(test.name, function()
+		test.fn(SKIP, CASE, CHECK, CHECK_EXPECT_ERROR)
+	end)
 end
+
+TITLE("RESULTS:")
 
 FINISH()

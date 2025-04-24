@@ -3,19 +3,21 @@ local teisu_types = require("../../lib/types")
 local types = require("../types")
 local testkit = require("../testkit")
 
-type CASE = types.CASE
-type CHECK = types.CHECK
-
-type Patch<K, V> = teisu_types.Patch<K, V>
-type PatchOperation = teisu_types.PatchOperation
-type NONE = teisu_types.NONE
-
 local diff, apply = patch.diff, patch.apply
 local equals = testkit.deq
 
 local NONE = { __none = "__none" } :: NONE
 
-return function(CASE: CASE, CHECK: CHECK)
+type Patch<K, V> = teisu_types.Patch<K, V>
+type PatchOperation = teisu_types.PatchOperation
+type NONE = teisu_types.NONE
+
+type SKIP = types.SKIP
+type CASE = types.CASE
+type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
+
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
     do
         CASE("array patches")
 

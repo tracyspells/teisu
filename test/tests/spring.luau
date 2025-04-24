@@ -15,12 +15,14 @@ local effect = teisu.effect
 local equals = testkit.seq
 local Vector2 = mock.Vector2
 
-type CASE = types.CASE
-type CHECK = types.CHECK
-
 type Spring<T> = teisu.Spring<T>
 
-return function(CASE: CASE, CHECK: CHECK)
+type SKIP = types.SKIP
+type CASE = types.CASE
+type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
+
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
 	do
 		CASE("validate")
 
