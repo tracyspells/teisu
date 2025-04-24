@@ -7,10 +7,12 @@ local effect = teisu.effect
 local root = teisu.root
 local get_root_scope = teisu_graph.get_root_scope
 
+type SKIP = types.SKIP
 type CASE = types.CASE
 type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
 
-return function(CASE: CASE, CHECK: CHECK)
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
 	do
 		CASE("rerun on flec change")
 

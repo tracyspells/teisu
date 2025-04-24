@@ -2,9 +2,6 @@ local teisu = require("../../lib/init")
 local types = require("../types")
 local testkit = require("../testkit")
 
-type CASE = types.CASE
-type CHECK = types.CHECK
-
 type SyncPayload = teisu.SyncPayload
 
 local server = teisu.server
@@ -12,7 +9,12 @@ local flec = teisu.flec
 local step = teisu.step
 local equals = testkit.deq
 
-return function(CASE: CASE, CHECK: CHECK)
+type SKIP = types.SKIP
+type CASE = types.CASE
+type CHECK = types.CHECK
+type CHECK_EXPECT_ERROR = types.CHECK_EXPECT_ERROR
+
+return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_EXPECT_ERROR)
     local target: Player = {} :: any
 
     do
