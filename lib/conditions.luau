@@ -3,6 +3,7 @@ local types = require("@types/")
 
 type Map<K, V> = types.Map<K, V>
 type Node<T> = types.Node<T>
+type Molecule<T> = types.Molecule<T>
 
 type RootScope = graph.RootScope
 
@@ -46,7 +47,7 @@ local function root(callback: () -> any)
 	return destroy_scope, result
 end
 
-local function show<T, U>(input: () -> boolean?, component: () -> T, fallback: (() -> U)?): () -> (T | U)?
+local function show<T, U>(input: Molecule<T?>, component: (Molecule<T>) -> U, fallback: (() -> U)?): () -> U?
 	local node: Node<T>
 	local cleaned_up, is_under_root_scope = false, false
 	local owner = get_root_scope()
@@ -78,10 +79,18 @@ local function show<T, U>(input: () -> boolean?, component: () -> T, fallback: (
 			destroy_scope = nil
 		end
 
-		if input() then
-			destroy_scope, result = root(component)
+		local input_result = input()
+		local is_truthy = not not input_result
+
+		if is_truthy then
+			if input_result then
+				destroy_scope, result = root(function()
+					local _input: () -> T = input :: any
+					return component(_input)
+				end)
+			end
 		elseif fallback then
-			destroy_scope, result = root(fallback)
+			destroy_scope, result = root(fallback :: any)
 		end
 
 		node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = result

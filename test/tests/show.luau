@@ -101,4 +101,14 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
         source_node = nil
         computed_node = nil
 	end
+
+    do
+        CASE("dont show component if input isnt truthy")
+
+        local input = flec(false)
+        local one = function() return 1 end
+
+        local output = show(input, one)
+        CHECK(output() ~= 1)
+    end
 end
