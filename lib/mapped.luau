@@ -42,9 +42,8 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 
 		for parent in next, node.parents do
 			parent.children[node] = nil
+			node.parents[parent] = nil
 		end
-
-		table.clear(node.parents)
 
 		-- remove deleted values from the cache
 		for key, cache in next, mapped_cache do
