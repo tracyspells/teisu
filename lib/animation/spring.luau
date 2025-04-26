@@ -3,6 +3,7 @@ local typeof = game and typeof or require("@mock/").typeof
 local types = require("@types/")
 local graph = require("@graph/")
 local convert = require("@convert/")
+local batch = require("@batch/")
 local peek = require("@peek/")
 local effect = require("@effect/")
 
@@ -29,10 +30,10 @@ type SpringState<T> = {
 }
 
 local createSourceNode = graph.createSourceNode
-local updateDescendants = graph.updateDescendants
 local get_root_scope = graph.get_root_scope
 local push_to_root_scope = graph.push_to_root_scope
 local capturing = graph.capturing
+local batched = graph.batched
 
 -- maps spring data to its corresponding output node
 -- lifetime of spring data is tied to output node
@@ -43,10 +44,27 @@ local POSITION_EPSILON = 1E-4
 
 local UPDATE_RATE = 120
 
-local TAU = 2 * math.pi
+local PI = math.pi
+local TAU = 2 * PI
+
+local INFINITY = math.huge
+
+local function is_NaN(value: number)
+	if value ~= value then
+		return true
+	end
+
+	if value == -INFINITY or value == INFINITY then
+		return true
+	end
+
+	return false
+end
 
 local function step_springs(dt: number)
 	for spring in springs do
+		if spring.completed then continue end
+		
 		local pos, vel, goal = spring.pos, spring.vel, spring.target_pos
 		local completed = 0
 
@@ -54,9 +72,9 @@ local function step_springs(dt: number)
 			local p, v, g = pos[i], vel[i], goal[i]
 
 			-- calculate displacement
-			local dx = p - g
+			local delta = p - g
 
-			local spring_force = dx * -spring.k
+			local spring_force = delta * -spring.k
 			local friction_force = v * -spring.c
 
 			local accel = (spring_force + friction_force) * dt
@@ -79,22 +97,35 @@ local function step_springs(dt: number)
 end
 
 local function update_spring_sources()
-	for spring, output in springs do
-		if spring.completed then
-			output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = spring.goal
-			spring.completed = nil
-			springs[spring] = nil
+	local results: { [Node<unknown>]: any } = {}
+	local source_node_updates = 0
 
+	for spring, output in springs do
+		local result = convert[spring.goalType].pack(spring.pos)
+
+		results[output] = result
+		source_node_updates += 1
+
+		if spring.completed then
 			if spring.onCompleteListeners.n > 0 then
 				for _, listener in ipairs(spring.onCompleteListeners) do
-					task.spawn(listener, output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value)
+					task.spawn(listener, result)
 				end
 			end
-		else
-			output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = convert[spring.goalType].pack(spring.pos)
-		end
 
-		updateDescendants(output)
+			spring.completed = nil
+			springs[spring] = nil
+		end
+	end
+
+	if source_node_updates > 0 then
+		batch(function()
+			for source_node, new_value in next, results do
+				batched[source_node] = true
+				source_node.isPartOfBatch = true
+				source_node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new_value
+			end
+		end)
 	end
 end
 
@@ -126,7 +157,7 @@ end
 
 local function is_spring(value: any): boolean
 	local meta = getmetatable(value)
-	return meta ~= nil and meta.type == "Spring"
+	return if meta ~= nil and meta.type == "Spring" then true else false
 end
 
 local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: UsedAs<number>?): Spring<T>
@@ -230,8 +261,12 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 			springs[state] = nil
 		end
 
-		table.clear(state)
-		dispose()
+		state = nil :: never
+
+		if dispose then
+			dispose()
+			dispose = nil :: never
+		end
 
 		output = nil :: never
 	end
@@ -286,18 +321,45 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		updates += 1
 
 		if state.damping ~= _damping then
-			state.damping = _damping
-			changes += 1
+			if typeof(_damping) ~= "number" then
+				error(`[spring]: damping property must be a number`)
+			end
+
+			if not is_NaN(_damping) then
+				state.damping = _damping
+				changes += 1
+			else
+				error(`[spring]: cannot set damping property to NaN, -infinity, or infinity`)
+			end
 		end
 
 		if state.speed ~= _speed then
-			state.speed = _speed
-			changes += 1
+			if typeof(_damping) ~= "number" then
+				error(`[spring]: speed property must be a number`)
+			end
+
+			if not is_NaN(_speed) then
+				state.speed = _speed
+				changes += 1
+			else
+				error(`[spring]: cannot set speed property to NaN, -infinity, or infinity`)
+			end
 		end
 
-		if state.goal ~= goal and goal == goal then
-			state.goal = goal
-			changes += 1
+		if state.goal ~= goal then
+			local is_number = goal_type == "number"
+
+			if not is_number then
+				state.goal = goal
+				changes += 1
+			else
+				if not is_NaN(goal :: any) then
+					state.goal = goal
+					changes += 1
+				else
+					error(`[spring]: cannot animate a goal that is NaN, -infinity, or infinity`)
+				end
+			end
 		end
 
 		if state.goalType ~= goal_type then
@@ -313,7 +375,7 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 
 			local n = (TAU / state.speed)
 			local k = n * n
-			local c = (4 * math.pi * state.damping) / state.speed
+			local c = (4 * PI * state.damping) / state.speed
 			state.k, state.c = k, c
 
 			if updates == 0 then

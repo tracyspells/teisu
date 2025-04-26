@@ -1,3 +1,5 @@
+--!native
+
 local Vector2 = game and Vector2 or require("@mock/").Vector2
 local Vector3 = game and Vector3 or require("@mock/").Vector3
 
@@ -7,6 +9,28 @@ type TypeToList<T> = (T) -> { number }
 type ListToType<T> = ({ number }) -> T
 
 local toLab, fromLab = lab.to, lab.from
+
+-- i would add a @native tag here
+-- but it's gonna screw up unit tests
+-- more specifically, mlua doesn't recognize @native
+local function pack_cframe(v: { number }): ListToType<CFrame>
+	local cos_x = math.cos(v[4] * 0.5)
+	local sin_x = math.sin(v[4] * 0.5)
+	local cos_y = math.cos(v[5] * 0.5)
+	local sin_y = math.sin(v[5] * 0.5)
+	local cos_z = math.cos(v[6] * 0.5)
+	local sin_z = math.sin(v[6] * 0.5)
+
+	return CFrame.new(
+		v[1],
+		v[2],
+		v[3],
+		sin_x * cos_y * cos_z + cos_x * sin_y * sin_z, -- qX
+		cos_x * sin_y * cos_z - sin_x * cos_y * sin_z, -- qY
+		cos_x * cos_y * sin_z + sin_x * sin_y * cos_z, -- qZ
+		cos_x * cos_y * cos_z - sin_x * sin_y * sin_z -- qW
+	) :: any
+end
 
 local type_conversions = {
 	number = {
@@ -127,24 +151,7 @@ local type_conversions = {
 			return { v.X, v.Y, v.Z, rotX, rotY, rotZ }
 		end :: TypeToList<CFrame>,
 
-		pack = function(v)
-			local cos_x = math.cos(v[4] * 0.5)
-			local sin_x = math.sin(v[4] * 0.5)
-			local cos_y = math.cos(v[5] * 0.5)
-			local sin_y = math.sin(v[5] * 0.5)
-			local cos_z = math.cos(v[6] * 0.5)
-			local sin_z = math.sin(v[6] * 0.5)
-
-			return CFrame.new(
-				v[1],
-				v[2],
-				v[3],
-				sin_x * cos_y * cos_z + cos_x * sin_y * sin_z, -- qX
-				cos_x * sin_y * cos_z - sin_x * cos_y * sin_z, -- qY
-				cos_x * cos_y * sin_z + sin_x * sin_y * cos_z, -- qZ
-				cos_x * cos_y * cos_z - sin_x * sin_y * sin_z -- qW
-			)
-		end :: ListToType<CFrame>,
+		pack = pack_cframe,
 	},
 }
 

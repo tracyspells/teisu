@@ -82,7 +82,7 @@ local function strict(value: boolean?): boolean
 end
 
 stepped = is_game and game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
-	on_step(deltaTime)
+	task.defer(on_step, deltaTime)
 end)
 
 return table.freeze {
