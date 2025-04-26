@@ -14,7 +14,7 @@ local get_root_scope = graph.get_root_scope
 local push_to_root_scope = graph.push_to_root_scope
 local capturing = graph.capturing
 
-local function create_root_scope(callback: () -> any)
+local function root(callback: () -> any)
 	local scope = {
 		type = "root",
 		already_queued = {},
@@ -79,9 +79,9 @@ local function show<T, U>(input: () -> boolean?, component: () -> T, fallback: (
 		end
 
 		if input() then
-			destroy_scope, result = create_root_scope(component)
+			destroy_scope, result = root(component)
 		elseif fallback then
-			destroy_scope, result = create_root_scope(fallback)
+			destroy_scope, result = root(fallback)
 		end
 
 		node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = result
@@ -173,7 +173,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 
 			last_component = component
 
-			destroy_scope, node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = create_root_scope(component)
+			destroy_scope, node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = root(component)
 		end
 
 		node = createDerivedNode(update)
