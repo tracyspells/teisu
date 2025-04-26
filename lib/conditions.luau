@@ -1,16 +1,50 @@
 local graph = require("@graph/")
-local creation = require("@creation/")
 local types = require("@types/")
 
 type Map<K, V> = types.Map<K, V>
 type Node<T> = types.Node<T>
 
+type RootScope = graph.RootScope
+
 local evaluate = graph.evaluate
 local createDerivedNode = graph.createDerivedNode
-local root = creation.root
+local push_scope = graph.push_scope
+local remove_scope = graph.remove_scope
 local get_root_scope = graph.get_root_scope
 local push_to_root_scope = graph.push_to_root_scope
 local capturing = graph.capturing
+
+local function root(callback: () -> any)
+	local scope = {
+		type = "root",
+		already_queued = {},
+		n = 0,
+	} :: RootScope
+
+	local destroy_scope = function()
+		if not scope then
+			return
+		end
+
+		if scope.n > 0 then
+			for i = scope.n, 1, -1 do
+				local fn = scope[i]
+				if not fn then
+					continue
+				end
+				fn()
+			end
+		end
+
+		scope = nil :: never
+	end
+
+	local index = push_scope(scope)
+	local result = callback()
+	remove_scope(index)
+
+	return destroy_scope, result
+end
 
 local function show<T, U>(input: () -> boolean?, component: () -> T, fallback: (() -> U)?): () -> (T | U)?
 	local node: Node<T>
@@ -24,9 +58,8 @@ local function show<T, U>(input: () -> boolean?, component: () -> T, fallback: (
 
 			for parent in next, node.parents do
 				parent.children[node] = nil
+				node.parents[parent] = nil
 			end
-
-			table.clear(node.parents)
 
 			if destroy_scope then
 				destroy_scope()
@@ -46,13 +79,9 @@ local function show<T, U>(input: () -> boolean?, component: () -> T, fallback: (
 		end
 
 		if input() then
-			destroy_scope, result = root(function()  
-				return component()
-			end)
+			destroy_scope, result = root(component)
 		elseif fallback then
-			destroy_scope, result = root(function()  
-				return fallback() :: any
-			end)
+			destroy_scope, result = root(fallback)
 		end
 
 		node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = result
@@ -106,9 +135,8 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 
 			for parent in next, node.parents do
 				parent.children[node] = nil
+				node.parents[parent] = nil
 			end
-
-			table.clear(node.parents)
 
 			last_component = nil
 			
@@ -145,10 +173,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 
 			last_component = component
 
-			local result: any
-			destroy_scope, result = root(component)
-
-			node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = result
+			destroy_scope, node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = root(component)
 		end
 
 		node = createDerivedNode(update)

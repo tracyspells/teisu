@@ -1,11 +1,12 @@
 local types = require("@types/")
 local graph = require("@graph/")
-local creation = require("@creation/")
 
 type Map<K, V> = types.Map<K, V>
 type Molecule<T> = types.Molecule<T>
 type Flec<T> = types.Flec<T>
 type Node<T> = types.Node<T>
+
+type RootScope = graph.RootScope
 
 type MappedConstructor =
 	(<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1)) -> Molecule<{ [K1]: V1 }>)
@@ -13,11 +14,44 @@ type MappedConstructor =
 	& (<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Molecule<{ [K1]: V1 }>)
 
 local createNode = graph.createDerivedNode
+local push_scope = graph.push_scope
+local remove_scope = graph.remove_scope
 local get_root_scope = graph.get_root_scope
 local push_to_root_scope = graph.push_to_root_scope
 local evaluate = graph.evaluate
-local root = creation.root
 local capturing = graph.capturing
+
+local function root(callback: () -> any)
+	local scope = {
+		type = "root",
+		already_queued = {},
+		n = 0,
+	} :: RootScope
+
+	local destroy_scope = function()
+		if not scope then
+			return
+		end
+
+		if scope.n > 0 then
+			for i = scope.n, 1, -1 do
+				local fn = scope[i]
+				if not fn then
+					continue
+				end
+				fn()
+			end
+		end
+
+		scope = nil :: never
+	end
+
+	local index = push_scope(scope)
+	local result = callback()
+	remove_scope(index)
+
+	return destroy_scope, result
+end
 
 local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
 	local is_under_root_scope = false
@@ -42,19 +76,18 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 
 		for parent in next, node.parents do
 			parent.children[node] = nil
+			node.parents[parent] = nil
 		end
-
-		table.clear(node.parents)
 
 		-- remove deleted values from the cache
 		for key, cache in next, mapped_cache do
 			if cache and cache.destroy then
 				cache.destroy()
-				cache.destroy = nil :: never
 			end
 		end
 
-		table.clear(mapped_cache)
+		mapped_cache = nil :: never
+		node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = nil :: never
 	end
 
 	node = createNode(function()
@@ -78,9 +111,9 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 			if cache == nil then -- track additions
 				local destroy, result = root(function()
 					local newValue, newKey = mapper(value, key)
-					return { newValue or value, newKey or key } :: { K0 | K1 | V0 | V1 }
+					return { newValue, newKey or key } :: { K0 | K1 | V1? }
 				end)
-
+				
 				mapped_cache[key] = {
 					destroy = destroy,
 					previous_value = value,
@@ -92,7 +125,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 
 				local destroy, result = root(function()
 					local newValue, newKey = mapper(value, key)
-					return { newValue or value, newKey or key } :: { K0 | K1 | V0 | V1 }
+					return { newValue, newKey or key } :: { K0 | K1 | V1? }
 				end)
 
 				cache.destroy = destroy

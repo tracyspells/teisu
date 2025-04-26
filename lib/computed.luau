@@ -23,9 +23,8 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 
 			for parent in next, node.parents do
 				parent.children[node] = nil
+				node.parents[parent] = nil
 			end
-
-			table.clear(node.parents)
 		end
 	end
 
