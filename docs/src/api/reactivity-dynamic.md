@@ -49,15 +49,15 @@ Displays components once a certain condition is met.
 ```luau
 type Molecule<T> = () -> T
 
-function show<T>(input: Molecule<boolean?>, component: () -> T): T?
-function show<T, U>(input: Molecule<boolean?>, component: () -> T, fallback: () -> U): (T | U)?
+function show<T>(input: Molecule<unknown>, component: (Molecule<unknown>) -> T): T?
+function show<T, U>(input: Molecule<unknown>, component: (Molecule<unknown>) -> T, fallback: () -> U): (T | U)?
 ```
 
 ### Parameters
 
--   `input`: A molecule that returns a boolean that determines what component to display.
+-   `input`: A molecule that returns a truthy value that determines what component to display.
 
--   `component`: A callback that returns a component that will display if `input` returns true.
+-   `component`: A callback that returns a component that will display if `input` returns true, with`input` being passed as the first argument.
 
 -   **optional** `fallback`: A callback that returns a component that will display if `input` returns false.
 
