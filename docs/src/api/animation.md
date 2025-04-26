@@ -1,5 +1,13 @@
 # Animation
 
+## Animatable
+
+```luau
+type Animatable = 
+    number | boolean | UDim | UDim2 | Rect | Vector2 | Vector3 | CFrame | Color3
+    | NumberRange | ColorSequenceKeypoint | NumberSequenceKeypoint
+```
+
 ## spring()
 
 Creates an object with a value always moving towards the goal value.
@@ -10,11 +18,7 @@ type Molecule<T> = () -> T
 
 type Cleanup = () -> ()
 
-type Animatable = 
-    number | boolean | UDim | UDim2 | Rect | Vector2 | Vector3 | CFrame | Color3
-    | NumberRange | ColorSequenceKeypoint | NumberSequenceKeypoint
-
-type Spring<T> = Molecule<T> & {
+type Spring<T = Animatable> = Molecule<T> & {
     impulse: (self: Spring<T>, delta: T) -> (),
     setPosition: (self: Spring<T>, newPosition: T) -> (),
     setVelocity: (self: Spring<T>, newVelocity: T) -> (),
