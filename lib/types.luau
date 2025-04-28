@@ -37,7 +37,7 @@ export type Spring<T> = Molecule<T> & {
 	onComplete: (callback: (value: T) -> ()) -> Cleanup,
 }
 
-export type UsedAs<T> = Molecule<T> | T
+export type UsedAs<T> = (Molecule<T>) | T
 export type Use = <T>(target: UsedAs<T>) -> T
 
 export type PatchOperation = "add" | "remove" | "replace"
