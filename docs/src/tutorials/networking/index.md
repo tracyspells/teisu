@@ -18,7 +18,7 @@ shared
 
 You should have your `remotes` set up in order to use `Teisu.server` properly.
 
-You can use `RemoteEvent` instances, or if you're a big fan of open source libraries you can use the following:
+You can use `RemoteEvent` instances, or you can use the following open-sourced library/IDL:
 
 - [Remo](https://github.com/littensy/remo)
 

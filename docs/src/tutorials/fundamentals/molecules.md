@@ -8,7 +8,7 @@ Molecules are selector functions -- functions that select certain aspects of sta
 
 - Flecs
 
-    The read opercation of a `flec` can be considered a molecule.
+    The read operation of a `flec` can be considered a molecule.
 
     ```luau
     local count = flec(0)
