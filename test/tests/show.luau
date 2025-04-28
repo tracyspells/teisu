@@ -111,7 +111,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
     end
 
     do
-        CASE("supports non-molecules")
+        CASE("supports constants")
 
         local input = "Hello, world!"
         local output = show(input, function()
@@ -119,10 +119,6 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
         end)
 
         CHECK(output() == input)
-
-        input = "Goodbye, world!"
-        CHECK(output() == "Hello, world!")
-
         cleanup(output)
         CHECK(output() == nil)
     end

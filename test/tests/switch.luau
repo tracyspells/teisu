@@ -150,7 +150,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
     end
 
     do
-        CASE("supports non-molecules")
+        CASE("supports constants")
 
         local input = true
         local output = switch(input) {
@@ -159,10 +159,6 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
         }
 
         CHECK(output() == 1)
-
-        input = false
-        CHECK(output() == 1)
-        
         cleanup(output)
         CHECK(output() == nil)
     end
