@@ -78,10 +78,10 @@ local function root<T...>(fn: () -> T...): (Cleanup, T...)
 		n = 0,
 	} :: RootScope
 	
-	local destroyed = false
 	local destroy = function()
-		if destroyed then
+		if scope == nil then
 			error(`root already destroyed`)
+			return
 		end
 
 		if scope.n > 0 then
@@ -94,8 +94,7 @@ local function root<T...>(fn: () -> T...): (Cleanup, T...)
 			end
 		end
 		
-		table.clear(scope)
-		destroyed = true
+		scope = nil :: never
 	end
 
 	local index = push_scope(scope)

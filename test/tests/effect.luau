@@ -1,11 +1,10 @@
 local teisu = require("../../lib/init")
-local teisu_graph = require("../../lib/graph")
 local types = require("../types")
 
 local flec = teisu.flec
 local effect = teisu.effect
 local root = teisu.root
-local get_root_scope = teisu_graph.get_root_scope
+local cleanup = teisu.cleanup
 
 type SKIP = types.SKIP
 type CASE = types.CASE
@@ -137,21 +136,21 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 	do
 		CASE("can be scheduled for deletion in root()")
 		
-		local root_scope
+		local is_root_scope_cleaned_up = false
 
 		local destroy = root(function()
 			local a = flec(0)
-			root_scope = get_root_scope()
+
+			cleanup(function() is_root_scope_cleaned_up = true end)
 			
 			effect(function()
 				a()
 			end)
 		end)
 
-		CHECK(root_scope ~= nil and root_scope.n == 1)
+		CHECK(is_root_scope_cleaned_up == false)
 		destroy()
-		CHECK(root_scope ~= nil and root_scope.n == nil)
-		root_scope = nil
+		CHECK(is_root_scope_cleaned_up == true)
 	end
 
 	do

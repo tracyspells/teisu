@@ -32,14 +32,11 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         local unroot
         unroot = root(function() 
-            local dispose = effect(function()
+            cleanup(function() cleaned_up = true end)
+
+            effect(function()
                 source()
                 updates += 1
-            end)
-
-            cleanup(function()
-                dispose()
-                cleaned_up = true
             end)
         end)
 
