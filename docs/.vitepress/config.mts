@@ -43,6 +43,8 @@ export default defineConfig({
             { text: "Observers", link: "/tutorials/fundamentals/observers" },
             { text: "Computeds", link: "/tutorials/fundamentals/computeds" },
             { text: "Molecules", link: "/tutorials/fundamentals/molecules" },
+            { text: "Scopes", link: "/tutorials/fundamentals/scopes" }, 
+            { text: "Cleanup", link: "/tutorials/fundamentals/cleanup" },
           ]
         },
 
@@ -66,7 +68,6 @@ export default defineConfig({
             { text: "Element Creation", link: "/tutorials/instances/element-creation" },
             { text: "Actions", link: "/tutorials/instances/actions" },
             { text: "Components", link: "/tutorials/instances/components" },
-            { text: "Cleanup", link: "/tutorials/instances/cleanup" },
             { text: "Show", link: "/tutorials/instances/show" },
             { text: "Switch", link: "/tutorials/instances/switch" },
           ],
