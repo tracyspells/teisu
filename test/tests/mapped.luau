@@ -11,6 +11,8 @@ local mapped = teisu.mapped
 local root = teisu.root
 local new = teisu.new
 local effect = teisu.effect
+local peek = teisu.peek
+local cleanup = teisu.cleanup
 local castToNode = graph.castToReactable
 local equals = testkit.seq
 
@@ -31,7 +33,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		end)
 
 		for index = 1, 3 do
-			local uppercase = allUpperCase()[index]
+			local uppercase = peek(allUpperCase)[index]
 			local item = items()[index]
 
 			CHECK(uppercase == string.upper(item))
@@ -39,7 +41,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		items({ "d", "e", "f" })
 
-		CHECK(equals(allUpperCase(), { "D", "E", "F" }))
+		CHECK(equals(peek(allUpperCase), { "D", "E", "F" }))
 
 		items(function(old) 
 			local new = table.clone(old) 
@@ -48,9 +50,9 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 			return new 
 		end)
 
-		CHECK(equals(allUpperCase(), { "D" }))
+		CHECK(equals(peek(allUpperCase), { "D" }))
 		items({ "c", "d" })
-		CHECK(equals(allUpperCase(), { "C", "D" }))
+		CHECK(equals(peek(allUpperCase), { "C", "D" }))
 
 		items(function(old) 
 			local new = table.clone(old) 
@@ -209,5 +211,19 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		end
 
 		unroot()
+	end
+
+	do
+		CASE("computes with constants")
+
+		local data = {foo = "oof", bar = "rab"}
+		local map = mapped(data, function(value)
+			return value :: any .. "baz"
+		end)
+
+		CHECK(typeof(map()) == "table")
+		CHECK(map().foo == "oofbaz")
+		CHECK(map().bar == "rabbaz")
+		cleanup(map)
 	end
 end

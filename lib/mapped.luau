@@ -1,17 +1,19 @@
 local types = require("@types/")
 local graph = require("@graph/")
+local peek = require("@peek/")
 
 type Map<K, V> = types.Map<K, V>
 type Molecule<T> = types.Molecule<T>
 type Flec<T> = types.Flec<T>
 type Node<T> = types.Node<T>
+type UsedAs<T> = types.UsedAs<T>
 
 type RootScope = graph.RootScope
 
 type MappedConstructor =
-	(<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1)) -> Molecule<{ [K1]: V1 }>)
-	& (<K0, V0, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> V1?) -> Molecule<{ [K0]: V1 }>)
-	& (<K0, V0, K1, V1>(subject: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Molecule<{ [K1]: V1 }>)
+	(<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1)) -> Molecule<{ [K1]: V1 }>)
+	& (<K0, V0, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, K0) -> V1?) -> Molecule<{ [K0]: V1 }>)
+	& (<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)) -> Molecule<{ [K1]: V1 }>)
 
 local createNode = graph.createDerivedNode
 local push_scope = graph.push_scope
@@ -53,7 +55,7 @@ local function root(callback: () -> any)
 	return destroy_scope, result
 end
 
-local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
+local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1?, K1?)): Molecule<{ [K1]: V1 }>
 	local is_under_root_scope = false
 	local owner = get_root_scope()
 
@@ -91,7 +93,7 @@ local function mapped<K0, V0, K1, V1>(molecule: Molecule<{ [K0]: V0 }>, mapper: 
 	end
 
 	node = createNode(function()
-		local new_input = molecule()
+		local new_input = peek(input, true)
 
 		-- remove deleted values from the cache
 		for key, cache in next, mapped_cache do
