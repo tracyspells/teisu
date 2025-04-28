@@ -1,9 +1,11 @@
 local graph = require("@graph/")
 local types = require("@types/")
+local peek = require("@peek/")
 
 type Map<K, V> = types.Map<K, V>
 type Node<T> = types.Node<T>
 type Molecule<T> = types.Molecule<T>
+type UsedAs<T> = types.UsedAs<T>
 
 type RootScope = graph.RootScope
 
@@ -47,8 +49,8 @@ local function root(callback: () -> any)
 	return destroy_scope, result
 end
 
-local function show<T, U>(input: Molecule<T?>, component: (Molecule<T>) -> U, fallback: (() -> U)?): () -> U?
-	local node: Node<T>
+local function show<T, U>(input: UsedAs<T>, component: () -> U, fallback: (() -> U)?): () -> U?
+	local node: Node<U?>
 	local cleaned_up, is_under_root_scope = false, false
 	local owner = get_root_scope()
 	local destroy_scope: (() -> ())?
@@ -72,25 +74,22 @@ local function show<T, U>(input: Molecule<T?>, component: (Molecule<T>) -> U, fa
 	end
 
 	node = createDerivedNode(function()
-		local result: T
+		local result: U?
 
 		if destroy_scope then
 			destroy_scope()
 			destroy_scope = nil
 		end
 
-		local input_result = input()
+		local input_result = peek(input, true)
 		local is_truthy = not not input_result
 
 		if is_truthy then
 			if input_result then
-				destroy_scope, result = root(function()
-					local _input: () -> T = input :: any
-					return component(_input)
-				end)
+				destroy_scope, result = root(component)
 			end
 		elseif fallback then
-			destroy_scope, result = root(fallback :: any)
+			destroy_scope, result = root(fallback)
 		end
 
 		node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = result
@@ -117,7 +116,7 @@ local function show<T, U>(input: Molecule<T?>, component: (Molecule<T>) -> U, fa
 				evaluate(node)
 			end
 
-			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: any
+			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: U?
 		end
 
 		local target = ...
@@ -130,13 +129,13 @@ local function show<T, U>(input: Molecule<T?>, component: (Molecule<T>) -> U, fa
 	end
 end
 
-local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () -> U?
+local function switch<T, U>(source: UsedAs<T>): (map: Map<T, ((() -> U)?)>) -> () -> U?
 	local owner = get_root_scope()
 	local cleaned_up, is_under_root_scope = false, false
 
 	local destroy_scope: (() -> ())?
 	local last_component: (() -> U)?
-	local node: Node<U>
+	local node: Node<U?>
 
 	local function destroy()
 		if not cleaned_up then
@@ -165,7 +164,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 				destroy_scope = nil
 			end
 
-			local component = map[source()]
+			local component = map[peek(source, true)]
 
 			if component == nil then
 				node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = nil :: never
@@ -208,7 +207,7 @@ local function switch<T, U>(source: () -> T): (map: Map<T, ((() -> U)?)>) -> () 
 					evaluate(node)
 				end
 
-				return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: U
+				return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: U?
 			end
 
 			local target = ...

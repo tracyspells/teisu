@@ -48,23 +48,24 @@ Displays components once a certain condition is met.
 
 ```luau
 type Molecule<T> = () -> T
+type Derivable<T> = (Molecule<T>) | T
 
-function show<T>(input: Molecule<unknown>, component: (Molecule<unknown>) -> T): T?
-function show<T, U>(input: Molecule<unknown>, component: (Molecule<unknown>) -> T, fallback: () -> U): (T | U)?
+function show<T>(input: Derivable<unknown>, component: () -> T): T?
+function show<T, U>(input: Derivable<unknown>, component: () -> T, fallback: () -> U): (T | U)?
 ```
 
 ### Parameters
 
--   `input`: A molecule that returns a truthy value that determines what component to display.
+-   `input`: A derivable that returns a truthy value that determines what component to display.
 
--   `component`: A callback that returns a component that will display if `input` returns true, with`input` being passed as the first argument.
+-   `component`: A callback that returns a component that will display if `input` returns true.
 
 -   **optional** `fallback`: A callback that returns a component that will display if `input` returns false.
 
 
 ### Returns
 
-1. If the result from `input` is set to `nil`, `show` will return `nil`.
+1. If the result from `input` is set to `nil`, the output of `show` is `nil`.
 2. If the result from `input` is set to `true`, `show` will return the result from `component`.
 2. If `fallback` is enabled and the result from `input` is set to `false`, `show` will return the result from `fallback`.
 
@@ -104,13 +105,14 @@ Displays a component out of a list of components given an input and a mapping ta
 
 ```luau
 type Molecule<T> = () -> T
+type Derivable<T> = (Molecule<T>) | T
 
-function switch<K, V>(source: Molecule<K>): (map: Map<K, () -> V>): () -> V?
+function switch<K, V>(source: Derivable<K>): (map: Map<K, () -> V>): () -> V?
 ```
 
 ### Parameters
 
--   `source`: A molecule that returns a value that can be inputed onto the `map` to get a component constructor. This component is then ran inside a stable scope. Each time `source` updates, previous scopes get destroyed.
+-   `source`: A derivable that returns a value that can be inputed onto the `map` to get a component constructor. This component is then ran inside a stable scope. Each time `source` updates, previous scopes get destroyed.
 
 ### Returns
 

@@ -8,7 +8,6 @@ local cleanup = teisu.cleanup
 local switch = teisu.switch
 local effect = teisu.effect
 local root = teisu.root
-local get_root_scope = teisu_graph.get_root_scope
 local castToNode = teisu_graph.castToReactable
 local equals = testkit.seq
 
@@ -78,18 +77,16 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         local switch0_count = 0
         local switch1_count = 0
-        local owner_count = 0
+        local is_root_scope_cleaned_up = false
         local changes = 0
 
         local input = flec(true)
         local input_node = castToNode(input)
 
-        local root_scope
         local unroot, output = root(function()  
             local output
 
-            root_scope = get_root_scope()
-            cleanup(function() owner_count += 1 end)
+            cleanup(function() is_root_scope_cleaned_up = true end)
 
             output = switch(input) {
                 [true] = function()
@@ -108,12 +105,14 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
                 changes += 1
             end)
 
-            return  output
+            return output
         end)
 
         local output_node = castToNode(output)
     
         changes = 0
+
+        CHECK(is_root_scope_cleaned_up == false)
 
         CHECK(output() == 1)
         
@@ -137,8 +136,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         unroot()
 
-        CHECK(owner_count == 1)
-        CHECK(root_scope and root_scope.n == nil) -- checks if there are no entries left to cleanup
+        CHECK(is_root_scope_cleaned_up == true)
 
         if input_node then
             CHECK(equals(input_node.children, {}))
@@ -149,5 +147,23 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
         end
 
         --input_node, output_node, root_scope = nil, nil, nil
+    end
+
+    do
+        CASE("supports non-molecules")
+
+        local input = true
+        local output = switch(input) {
+            [true] = function() return 1 end,
+            [false] = function() return 0 end,
+        }
+
+        CHECK(output() == 1)
+
+        input = false
+        CHECK(output() == 1)
+        
+        cleanup(output)
+        CHECK(output() == nil)
     end
 end

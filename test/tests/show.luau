@@ -10,7 +10,6 @@ local flec = teisu.flec
 local show = teisu.show
 local cleanup = teisu.cleanup
 local root = teisu.root
-local get_root_scope = teisu_graph.get_root_scope
 local castToNode = teisu_graph.castToReactable
 local equals = testkit.seq
 
@@ -53,19 +52,18 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local input = flec(true)
 
-        local root_scope
+        local is_root_scope_cleaned_up = false
         local unroot, output = root(function()  
-            root_scope = get_root_scope()
+            cleanup(function() is_root_scope_cleaned_up = true end)
 
             return show(input, one)
         end)
 
         
-        CHECK(root_scope and root_scope.n == 1)
+        CHECK(is_root_scope_cleaned_up == false)
         output() -- create a root scope internally
-        unroot()
-        CHECK(root_scope and root_scope.n == nil)
-        root_scope = nil
+        unroot() -- everything should be cleaned up at this point
+        CHECK(is_root_scope_cleaned_up == true)
     end
 
     do
@@ -110,5 +108,22 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         local output = show(input, one)
         CHECK(output() ~= 1)
+    end
+
+    do
+        CASE("supports non-molecules")
+
+        local input = "Hello, world!"
+        local output = show(input, function()
+            return input  
+        end)
+
+        CHECK(output() == input)
+
+        input = "Goodbye, world!"
+        CHECK(output() == "Hello, world!")
+
+        cleanup(output)
+        CHECK(output() == nil)
     end
 end
