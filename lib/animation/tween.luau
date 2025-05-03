@@ -49,7 +49,7 @@ type TweenState<T> = {
 type TweenProps = {
 	direction: UsedAs<EasingDirection>?,
 	style: UsedAs<EasingStyle>?,
-	duration: UsedAs<number>,
+	duration: UsedAs<number>?,
 	delay: UsedAs<number>?,
 	reverses: UsedAs<boolean>?,
 	repeats: UsedAs<number>?,
@@ -66,6 +66,29 @@ local tweens: { [TweenState<unknown>]: Node<unknown> } = setmetatable({} :: any,
 
 local INFINITY = math.huge
 
+local DEFAULT_TWEEN_PROPS = {
+	direction = "In" :: EasingDirection,
+	style = "Linear" :: EasingStyle,
+	duration = 1,
+	delay = 0,
+	reverses = false,
+	repeats = 0,
+}
+
+local function get_tween_props(props: TweenProps?): TweenProps
+	if not props then
+		return DEFAULT_TWEEN_PROPS
+	end
+
+	for key, value in DEFAULT_TWEEN_PROPS do
+		if props[key] == nil then
+			props[key] = value
+		end
+	end
+
+	return props
+end
+
 local function is_NaN(value: number)
 	if value ~= value then
 		return true
@@ -78,7 +101,7 @@ local function is_NaN(value: number)
 	return false
 end
 
-local function is_valid_direction(value: string): boolean
+local function is_valid_direction(value: any): boolean
 	if type(value) ~= "string" then
 		return false
 	end
@@ -182,7 +205,9 @@ local function is_tween(value: any): boolean
 	return if meta ~= nil and meta.type == "Tween" then true else false
 end
 
-local function tween<T>(source: Molecule<T>, props: TweenProps): Tween<T>
+local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
+	local tween_props = get_tween_props(props)
+
 	local owner = get_root_scope()
 
 	local output = createSourceNode(nil :: T?)
@@ -284,13 +309,13 @@ local function tween<T>(source: Molecule<T>, props: TweenProps): Tween<T>
 	dispose = effect(function()
 		local changes = 0
 
-		local duration = peek(props.duration, true) :: number
-		local style = peek(if not props.style then "Linear" else props.style, true)
-		local direction: EasingDirection = peek(if not props.direction then "In" else props.direction, true)
-		local delay = peek(if not props.delay then 0 else props.delay, true)
-		local reverses = peek(if not props.reverses then false else props.reverses, true)
+		local duration = peek(tween_props.duration, true) :: number
+		local style = peek(tween_props.style, true)
+		local direction: EasingDirection = peek(tween_props.direction, true)
+		local delay = peek(tween_props.delay, true)
+		local reverses = peek(tween_props.reverses, true)
 		
-		local repeats = peek(if not props.repeats then 0 else props.repeats, true)
+		local repeats = peek(tween_props.repeats, true)
 		repeats = math.max(repeats, -1) + 1
 		
 		local goal = source()
