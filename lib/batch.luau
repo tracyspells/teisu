@@ -128,13 +128,9 @@ return function(callback: () -> ())
 				end
 			end
 		end
-	until #queue <= 0
-
-	table.clear(eagerNodesSeen)
+	until #queue <= 0 or entry == nil
 
 	for _, node in eagerNodes do
 		evaluate(node)
 	end
-
-	table.clear(eagerNodes)
 end
