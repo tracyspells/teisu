@@ -121,7 +121,7 @@ end)
 
 ### Schedule changes
 
-<!--@include: @api/reactivity-core.md{157,160}-->
+<!--@include: @api/reactivity-core.md{180,186}-->
 
 ::: code-group
 

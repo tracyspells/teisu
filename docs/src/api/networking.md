@@ -1,12 +1,20 @@
 # Networking
 
+## NONE
+
+```luau
+type NONE = { __none = "__NONE" }
+```
+
+### Details
+
+`NONE` is a special object that represents `nil` in Luau.
+
 ## SyncPayload
 
 An object that contains important information regarding state.
 
 ```luau
-type NONE = { __none = "__NONE" }
-
 type Patch<K, V> = {
     op: ("add" | "remove" | "replace"),
     path: { K },
@@ -38,7 +46,7 @@ type SyncPayload = {
     
     -   `path`: An array of table keys that have changed.
 
-    -   `value`: the value that got changed. If `op` is set to `remove`, this will be set to `NONE` (represents nil in Luau).
+    -   `value`: the value that got changed. If `op` is set to `remove`, this will be set to `NONE`.
 
 
 **Examples:**
@@ -88,10 +96,9 @@ local syncPayload = {
 ```
 :::
 
-
 ## is_none()
 
-Checks if the value given is `NONE`, a special object that represents `nil` in Luau.
+Checks if the value given is `NONE`.
 
 ```luau
 function is_none(value: any): boolean
@@ -117,7 +124,6 @@ input = NONE
 print(is_none(input)) -- true
 ```
 
-   
 ## server()
 
 Creates a server sync object. This synchronizes every client's flecs with the server's state by sending state changes that the client then merges into its state.
@@ -138,6 +144,10 @@ function server({
 }): Server
 ```
 
+::: warning
+You only need to call `Teisu.server()` *once*.
+:::
+
 ### Parameters
 
 -   `options`: An object to configure sync behavior.
@@ -153,10 +163,6 @@ function server({
 -   `:hydrate(player)`: Sends the player a full state update for all synced flecs.
 
 -   `:connect(callback)`: Registers a callback to send state updates to clients. The callback will receive the player and the payload to send, and should fire a remote event. The payload is read-only, so any changes should be applied to a copy of the payload.
-
-::: warning
-You only need to call `Teisu.server()` *once*.
-:::
 
 **Example:**
 
@@ -182,7 +188,6 @@ remotes.hydrate:connect(function(player: Player)
 end)
 ```
 
-
 ## client()
 
 Creates a client sync object. This synchronizes the client's flecs with the server's state by merging state changes sent by the server into each flec.
@@ -199,6 +204,10 @@ Creates a client sync object. This synchronizes the client's flecs with the serv
     }
 ```
 
+::: warning
+You only need to call `Teisu.client()` *once*.
+:::
+
 ### Parameters
 
 -   `options`: An object to configure sync behavior.
@@ -211,10 +220,6 @@ Creates a client sync object. This synchronizes the client's flecs with the serv
 `client` returns an object with the following methods:
 
 -   `:sync(payload)`: Applies a state update from the server.
-
-::: warning
-You only need to call `Teisu.client()` *once*.
-:::
 
 
 **Example:**

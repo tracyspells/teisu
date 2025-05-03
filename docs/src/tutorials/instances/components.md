@@ -65,7 +65,7 @@ end
  
 Okay, that's cool and dandy, but what if you want your `props` to support state objects? 
 
-Don't worry, we can use the `Derivable` type for this.
+Don't worry, we can use the [`Derivable` type](../fundamentals/derivable) for this.
 
 ```luau {5-7}
 type Derivable<T> = Teisu.Derivable<T>
@@ -82,10 +82,10 @@ local function cheese(
 end
 ```
 
-You can think of `Derivable` properties as state objects. This means that `peek()` can be used to get a `Derivable` property's value:
+Now we can use `peek()` to get the value of a `Derivable`:
 
 
-```luau
+```luau {12-13}
 local peek = Teisu.peek
 local flec = Teisu.flec
 
@@ -111,38 +111,6 @@ cheese({
     IsStinky = true,
 })
 ```
-
-::: warning Be mindful of `Derivable`'s angle brackets
-
-Consider the following type definitions carefully:
-
-```luau
-Derivable<Vector3>?
-```
-
-This type definition means that it will only accept:
-
-- `Vector3`
-
-- A state object storing a `Vector3` object
-
-- `nil` (if the user doesn't specify a property value)
-
-This type is best used for *optional properties*, where you provide a default value if not specified by the user. 
-
-```luau
-Derivable<Vector3?>
-```
-
-This type definition means that it will only accept:
-
-- `Vector3`, or `nil`
-
-- A state object storing a `Vector3` object, or `nil`
-
-This type works best in situations where the property understands `nil` as a valid value. The user can set it to `nil` at any time.
-
-:::
 
 ## Reactive Components
 

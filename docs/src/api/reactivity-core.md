@@ -110,7 +110,7 @@ type Cleanup = () -> ()
 
 function effect(callback: () -> ()): Cleanup
 function effect(callback: ( dispose: () -> () ) -> ()): Cleanup
-function effect(callback: ( dispose: () -> (), cleanup: Cleanup ) -> ()): Cleanup
+function effect(callback: ( dispose: () -> (), on_change: Cleanup ) -> ()): Cleanup
 ```
 
 ### Parameters
@@ -123,6 +123,28 @@ function effect(callback: ( dispose: () -> (), cleanup: Cleanup ) -> ()): Cleanu
 
 ::: danger
 Effects should <u>never delay</u>. You shouldn't use an `effect` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
+:::
+
+::: danger Nested effects
+
+Nested effects, like this for example...
+
+```luau
+local a = flec("Hello, world!")
+local b = flec("Goodbye, world!")
+
+local outer_effect = effect(function()
+    a()
+
+    local inner_effect = effect(function()
+        b()
+    end)
+end)
+
+```
+
+...aren't allowed.
+
 :::
 
 **Examples:**
@@ -165,7 +187,7 @@ A special `on_change` function is passed in to the `effect` callback. Functions 
 
 ```luau
 local count = flec(0)
-local dispose = effect(function(dispose, on_change)
+local dispose = effect(function(_, on_change)
     on_change(function()
         print("count has changed!")
     end)

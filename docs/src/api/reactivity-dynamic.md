@@ -10,11 +10,13 @@ type Map<K, V> = { [K]: V }
 type Cleanup = () -> ()
 
 type Molecule<T> = () -> T
+type Derivable<T> = (Molecule<T>) | T
+
 type MapMolecule<K, V> = Molecule<Map<K, V>>
 
-function mapped<K0, V0, V1>(state: MapMolecule<K0, V0>, mapper: (V0, K0) -> V1?): MapMolecule<K0, V1>
-function mapped<K0, V0, K1, V1>(state: MapMolecule<K0, V0>, mapper: (V0, K0) -> (V1?, K1?)): MapMolecule<K1, V1>
-function mapped<K0, V0, K1, V1>(state: MapMolecule<K0, V0>, mapper: (V0, K0) -> (V1?, K1)): MapMolecule<K1, V1>
+function mapped<K0, V0, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> V1?): MapMolecule<K0, V1>
+function mapped<K0, V0, K1, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> (V1?, K1?)): MapMolecule<K1, V1>
+function mapped<K0, V0, K1, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> (V1?, K1)): MapMolecule<K1, V1>
 ```
 
 ### Parameters

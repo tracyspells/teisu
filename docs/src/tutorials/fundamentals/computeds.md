@@ -20,7 +20,7 @@ print(quick_maths()) --> 3
 
 You pass in a callback function that defines a calculation. From there, you can use `peek()` or call the computed itself to read the result of the calculation at any time.
 
-### Using Flecs
+### Using flecs
 
 Calling flecs inside the computed callback will track them as a dependency:
 
@@ -51,13 +51,15 @@ numbers: 1, 2
 
 :::
 
-However, if you try to `peek()` at flecs inside the callback, your code won't work as intended:
+### Peeking at state objects
+
+However, if you try to `peek()` a `flec` inside the callback, your code won't work as intended:
 
 ```luau {9-16}
 local numbers = flec({ 1 })
 
 local display_numbers = computed(function()
-    return `numbers: {peek(numbers)}`
+    return `numbers: { table.concat( peek(numbers), "," ) }`
 end)
 
 print(numbers(), display_numbers()) --> { 1 }, numbers: 1
@@ -70,6 +72,29 @@ numbers(function(old)
 end)
 
 print(numbers(), display_numbers()) --> { 1, 2 }, numbers: 1
+```
+
+This is where the second argument of `peek()` comes in handy.
+
+If we set this argument to `true`, `numbers` will be tracked as a dependency, and `peek()` will return the result of `numbers`.
+
+```luau {4}
+local numbers = flec({ 1 })
+
+local display_numbers = computed(function()
+    return `numbers: { table.concat( peek(numbers, true), "," ) }`
+end)
+
+print(numbers(), display_numbers()) --> { 1 }, numbers: 1 
+
+-- `display_numbers` will rerun now!
+numbers(function(old)
+    local new = table.clone(old)
+    table.insert(new, 2)
+    return new
+end)
+
+print(numbers(), display_numbers()) --> { 1, 2 }, numbers: 1, 2
 ```
 
 ::: tip Computed calculations are memoized.

@@ -2,13 +2,19 @@
 
 Molecules are selector functions -- functions that select certain aspects of state and returns them.
 
+This is what a molecule is internally:
+
+```luau
+type Molecule<T> = () -> T
+```
+
 ## What is considered a molecule?
 
 - Computeds
 
 - Flecs
 
-    The read opercation of a `flec` can be considered a molecule.
+    The read operation of a `flec` can be considered a molecule.
 
     ```luau
     local count = flec(0)
@@ -24,7 +30,7 @@ Molecules are selector functions -- functions that select certain aspects of sta
 
 - Functions
 
-    As long as you have a state object that's being read inside a function, that function is considered a `molecule`.
+    As long as you have a state object that's being read inside a function, that function is considered a molecule.
 
     ```luau {5-7}
     local subscribe = Teisu.subscribe
