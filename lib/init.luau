@@ -26,8 +26,12 @@ export type SyncPayload = types.SyncPayload
 export type sync_payload = SyncPayload
 export type Animatable = types.Animatable
 export type animatable = Animatable
+export type EasingStyle = types.EasingStyle
+export type easingStyle = EasingStyle
+export type EasingDirection = types.EasingDirection
+export type easingDirection = EasingDirection
 
-local update_springs = animation.step_springs()
+local update_animations = animation.step()
 local update_server = sync.step_server()
 
 local mount, new, root, _apply = creation.mount, creation.new, creation.root, creation.apply
@@ -39,14 +43,12 @@ local is_server = is_game and game:GetService("RunService"):IsServer()
 
 local function on_step(deltaTime: number)
 	if is_game then
-		debug.profilebegin("TEISU STEP")
-		debug.profilebegin("TEISU SPRING")
+		debug.profilebegin("TEISU ANIMATION")
 	end
 
-	update_springs(deltaTime)
+	update_animations(deltaTime)
 
 	if is_game then
-		debug.profileend()
 		debug.profileend()
 	end
 
@@ -116,6 +118,7 @@ return table.freeze {
 
 	-- animations
 	spring = animation.spring,
+	tween = animation.tween,
 
 	-- networking
 	client = sync.client,

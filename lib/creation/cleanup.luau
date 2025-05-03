@@ -2,6 +2,7 @@ local typeof = game and typeof or require("@mock/").typeof
 
 local types = require("@types/")
 local spring = require("@spring/")
+local tween = require("@tween/")
 local graph = require("@graph/")
 
 type Spring<T> = types.Spring<T>
@@ -9,7 +10,7 @@ type Spring<T> = types.Spring<T>
 type Destroyable = { destroy: (any) -> () } | { Destroy: (any) -> () }
 type Disconnectable = { disconnect: (any) -> () } | { Disconnect: (any) -> () }
 
-local is_spring = spring.is_spring
+local is_spring, is_tween = spring.is_spring, tween.is_tween
 local push_scope = graph.push_scope
 local remove_scope = graph.remove_scope
 local get_root_scope = graph.get_root_scope
@@ -26,7 +27,7 @@ local function get_cleanup(obj: any): () -> ()
 		elseif typeof(obj) == "Instance" then function()
 			obj:Destroy()
 		end
-		elseif is_spring(obj) then function()
+		elseif is_spring(obj) or is_tween(obj) then function()
 			obj()
 		end
 		elseif obj.destroy then function()
