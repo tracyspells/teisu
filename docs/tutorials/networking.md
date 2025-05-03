@@ -44,7 +44,7 @@ return {
 
 You'll also need two remote events:
 
-- `sync(player: Player, payload: SyncPayload)` This remote event will fire from server to `player` with `payload`, [a table that contains the full state and state changes](../../api/networking/#syncpayload).
+- `sync(player: Player, payload: SyncPayload)` This remote event will fire from server to `player` with `payload`, [a table that contains the full state and state changes](../api/networking#syncpayload).
 
 - `hydrate()` This remote event will fire from a client to the server once they're ready to receive state from the server.
 

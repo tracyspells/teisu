@@ -11,5 +11,5 @@ hero:
       link: /tutorials/getting-started
     - theme: alt
       text: API Reference
-      link: /api/reactivity-core
+      link: /api/teisu
 

@@ -4,7 +4,6 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Teisu",
   description: "A reactive library for Luau",
-  srcDir: './src',
   base: "/teisu/",
   cleanUrls: true,
 
