@@ -32,7 +32,7 @@ type Molecule<T> = () -> T
 type Cleanup = () -> ()
 
 type TweenProps = {
-    duration: Derivable<number>,
+    duration: Derivable<number>?,
     delay: Derivable<number>?,
     style: Derivable<EasingStyle>?
     direction: Derivable<EasingDirection>?,
@@ -47,7 +47,7 @@ type Tween<T = Animatable> = Molecule<T> & {
 
 function tween<T>(
     goal: Molecule<T & Animatable>,
-    props: TweenProps
+    props: TweenProps?
 ): Tween<T>
 ```
 
@@ -55,19 +55,19 @@ function tween<T>(
 
 -   `goal`: A molecule that represents the goal the tween should follow.
 
--   `props`: Determines the easing curve that the tween will follow.
+-  **optional** `props`: Determines the easing curve that the tween will follow.
 
-    -   `duration`: How long (in seconds) it takes to go from point A to B Defaults to `1` second.
+    - **optional** `duration`: How long (in seconds) it takes to go from point A to B. Defaults to `1` second.
 
-    -   `style`: The style in which the tween executes.
+    -  **optional** `style`: The style in which the tween executes. Defaults to `"Linear"`.
 
-    -   `direction`: The direction in which the tween executes.
+    -  **optional** `direction`: The direction in which the tween executes. Defaults to `"In"`.
 
-    -   `reverses`: Whether or not the tween interpolates in reverse once the initial tween completes.
+    -  **optional** `reverses`: Whether or not the tween interpolates in reverse once the initial tween completes. Defaults to `false`.
 
-    -   `delay`: Delays the tween before it begins, in seconds.
+    -  **optional** `delay`: Delays the tween before it begins, in seconds. Defaults to `0`.
 
-    -   `repeats`: Number of times the tween repeats. `-1` indicates indefinite repetition.
+    -  **optional** `repeats`: Number of times the tween repeats. `-1` indicates indefinite repetition. Defaults to `0`.
 
 ### Returns
 
