@@ -3,6 +3,7 @@ local testkit = require("@testkit/")
 
 local flec = teisu.flec
 local computed = teisu.computed
+local batch = teisu.batch
 
 local N = 2 ^ 18 -- 262144
 
@@ -68,7 +69,7 @@ TITLE "graphs"
 
 BENCH("a --> b", function() 
     local a = flec(0)
-    local b = computed(function() return a() end)
+    computed(function() return a() end)()
 
     for i = 1, START(N) do
         a(i)
@@ -86,6 +87,63 @@ BENCH("1 --> 1000", function()
 
     for i = 1, START(10) do
         src(i)
+    end
+end)
+
+BENCH("update 1->1->1->1...1000 graph", function()
+    local src = flec(-1)
+
+    local last = src
+    for i = 1, 1000 do
+        local l = last
+        last = computed(function() return l() end)
+        last()
+    end
+
+    src(0)
+
+    for i = 1, START(10) do
+        src(i)
+    end
+end)
+
+BENCH("update 1000->1 graph", function()
+    local srcs = {}
+    for i = 1, 1000 do
+        srcs[i] = flec(0)
+    end
+
+    computed(function()
+        for i = 1, 1000 do
+            srcs[i]()
+        end
+        return false
+    end)()
+
+    for idx = 1, START(1000) do
+        srcs[idx](idx)
+    end
+end)
+
+BENCH("update 1000->1 graph (batched)", function()
+    local srcs = {}
+    for i = 1, 1000 do
+        srcs[i] = flec(0)
+    end
+
+    computed(function()
+        for i = 1, 1000 do
+            srcs[i]()
+        end
+        return false
+    end)()
+
+    for i = 1, START(1) do
+        batch(function()
+            for idx = 1, 1000 do
+                srcs[idx](i)
+            end
+        end)
     end
 end)
 
