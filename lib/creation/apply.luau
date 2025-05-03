@@ -1,5 +1,6 @@
 local types = require("@types/")
 local spring = require("@spring/")
+local tween = require("@tween/")
 local action = require("@action/")
 local graph = require("@graph/")
 local effect = require("@effect/")
@@ -28,7 +29,7 @@ type Cache = {
 	nested_stack: { {} | number },
 }
 
-local is_spring = spring.is_spring
+local is_spring, is_tween = spring.is_spring, tween.is_tween
 local is_action = action.is_action
 local get_root_scope = graph.get_root_scope
 local push_to_root_scope = graph.push_to_root_scope
@@ -48,10 +49,9 @@ do
 		end)
 	end
 
-	local function children(instance: Instance, source: Molecule<Instance | { Instance }>)
+	local function children(instance: Instance, source: Molecule<Instance | { Instance }>, layer: number, owner: graph.RootScope?)
 		local node: Node<any>
-		local owner = get_root_scope()
-
+		
 		local disconnected = false
 		local new_children: Set<Instance>, prev_children: Set<Instance> = {}, {}
 
@@ -71,7 +71,7 @@ do
 					process_child(c)
 				end
 			elseif type(child) == "function" then
-				children(instance, child)
+				children(instance, child, layer + 1, owner)
 			end
 		end
 
@@ -81,7 +81,10 @@ do
 
 				for parent in next, node.parents do
 					parent.children[node] = nil
+					node.parents[parent] = nil
 				end
+
+				node = nil :: never
 			end
 		end
 
@@ -109,6 +112,10 @@ do
 			table.clear(prev_children)
 			prev_children, new_children = new_children, prev_children
 		end)
+
+		if not owner and layer == 0 then
+			owner = get_root_scope()
+		end
 
 		if owner then
 			push_to_root_scope(owner, node, destroy)
@@ -158,7 +165,7 @@ local function process_properties(props: Map<unknown, unknown>, instance: Instan
 				else
 					implicit_effects.property(instance, key, value :: Molecule<() -> ()>)
 				end
-			elseif is_spring(value) then
+			elseif is_spring(value) or is_tween(value) then
 				implicit_effects.property(instance, key, value :: Molecule<() -> ()>)
 			else
 				(instance :: any)[key] = value -- set property
@@ -169,7 +176,7 @@ local function process_properties(props: Map<unknown, unknown>, instance: Instan
 			elseif is_action(value) then
 				table.insert(cache.actions, (value :: any)[1] :: (Instance) -> ())
 			elseif type(value) == "function" then
-				implicit_effects.children(instance, value :: Molecule<Instance | { Instance }>)
+				implicit_effects.children(instance, value :: Molecule<Instance | { Instance }>, 0)
 			elseif type(value) == "table" then
 				table.insert(cache.nested_stack, value :: {})
 				table.insert(cache.nested_stack, depth + 1)
