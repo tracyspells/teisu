@@ -22,7 +22,7 @@ export default defineConfig({
     nav: [
       { text: "Home", link: "/" },
       { text: "Tutorials", link: "/tutorials/getting-started" },
-      { text: "API", link: "/api/reactivity-core" },
+      { text: "API", link: "/api/teisu" },
     ],
 
     sidebar: {
@@ -46,6 +46,7 @@ export default defineConfig({
             { text: "Derivable", link: "/tutorials/fundamentals/derivable" },
             { text: "Scopes", link: "/tutorials/fundamentals/scopes" }, 
             { text: "Cleanup", link: "/tutorials/fundamentals/cleanup" },
+            { text: "Strict Mode", link: "/tutorials/fundamentals/strict-mode" },
           ]
         },
 
@@ -87,6 +88,7 @@ export default defineConfig({
         {
           text: "API Reference",
           items: [
+            { text: "Teisu", link: "/api/teisu" },
             { text: "Reactivity: Core", link: "/api/reactivity-core" },
             { text: "Reactivity: Observers", link: "/api/reactivity-observers" },
             { text: "Reactivity: Utility", link: "/api/reactivity-utility" },
