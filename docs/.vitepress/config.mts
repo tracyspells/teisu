@@ -43,6 +43,7 @@ export default defineConfig({
             { text: "Observers", link: "/tutorials/fundamentals/observers" },
             { text: "Computeds", link: "/tutorials/fundamentals/computeds" },
             { text: "Molecules", link: "/tutorials/fundamentals/molecules" },
+            { text: "Derivable", link: "/tutorials/fundamentals/derivable" },
             { text: "Scopes", link: "/tutorials/fundamentals/scopes" }, 
             { text: "Cleanup", link: "/tutorials/fundamentals/cleanup" },
           ]
