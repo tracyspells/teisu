@@ -493,9 +493,9 @@ end
 -- Equality
 --------------------------------------------------------------------------------
 
-local function shallow_eq(a: {}, b: {}): boolean
-	if #a ~= #b then
-		return false
+local function shallow_eq(a: any, b: any): boolean
+	if type(a) ~= "table" or type(b) ~= "table" then
+		return a == b
 	end
 
 	for i, v in next, a do
@@ -513,27 +513,19 @@ local function shallow_eq(a: {}, b: {}): boolean
 	return true
 end
 
-local function deep_eq(a: {}, b: {}): boolean
-	if #a ~= #b then
-		return false
+local function deep_eq(a: any, b: any): boolean
+	if type(a) ~= "table" or type(b) ~= "table" then
+		return a == b
 	end
 
 	for i, v in next, a do
-		if type(b[i]) == "table" and type(v) == "table" then
-			if deep_eq(b[i], v) == false then
-				return false
-			end
-		elseif b[i] ~= v then
+		if not deep_eq(v, b[i]) then
 			return false
 		end
 	end
 
 	for i, v in next, b do
-		if type(a[i]) == "table" and type(v) == "table" then
-			if deep_eq(a[i], v) == false then
-				return false
-			end
-		elseif a[i] ~= v then
+		if not deep_eq(v, a[i]) then
 			return false
 		end
 	end
