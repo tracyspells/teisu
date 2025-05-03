@@ -6,7 +6,7 @@ In this tutorial, you'll learn how to sync your flecs accross the server-client 
 
 Before we begin, we need to have a record of flecs that we can use to send their states to the client.
 
-To create this record of flecs, We'll follow a file hierarchy like this:
+To create this record of flecs, we'll follow a file hierarchy like this:
 
 ```
 shared
@@ -18,7 +18,7 @@ shared
 
 You should have your `remotes` set up in order to use `Teisu.server` properly.
 
-You can use `RemoteEvent` instances, or you can use the following open-sourced library/IDL:
+You can use `RemoteEvent` instances, or you can use the following open-sourced libraries or IDLs:
 
 - [Remo](https://github.com/littensy/remo)
 
@@ -44,7 +44,7 @@ return {
 
 You'll also need two remote events:
 
-- `sync(player: Player, payload: SyncPayload)` This remote event will fire from server to `player` with `payload`, a table that contains the full state and state changes.
+- `sync(player: Player, payload: SyncPayload)` This remote event will fire from server to `player` with `payload`, [a table that contains the full state and state changes](../../api/networking/#syncpayload).
 
 - `hydrate()` This remote event will fire from a client to the server once they're ready to receive state from the server.
 

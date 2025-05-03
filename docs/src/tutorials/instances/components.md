@@ -65,7 +65,7 @@ end
  
 Okay, that's cool and dandy, but what if you want your `props` to support state objects? 
 
-Don't worry, we can use the [`Derivable` type](../fundamentals/derivable.md) for this.
+Don't worry, we can use the [`Derivable` type](../fundamentals/derivable) for this.
 
 ```luau {5-7}
 type Derivable<T> = Teisu.Derivable<T>
@@ -82,10 +82,10 @@ local function cheese(
 end
 ```
 
-You can think of `Derivable` properties as state objects. This means that `peek()` can be used to get a `Derivable` property's value:
+Now we can use `peek()` to get the value of a `Derivable`:
 
 
-```luau
+```luau {12-13}
 local peek = Teisu.peek
 local flec = Teisu.flec
 

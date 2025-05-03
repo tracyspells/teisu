@@ -1,6 +1,6 @@
 # Tweens
 
-Tweens follow the value of other state objects by using a pre-made animation curve. They are used for simple, pre-determined animations.
+Tweens follow the value of other state objects by using a pre-made animation curve. They are used for simple and predictable animations.
 
 ## Usage
 
