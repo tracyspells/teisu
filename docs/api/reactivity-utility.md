@@ -5,8 +5,9 @@
 If called outside a stable scope, it will run the callback immediately. If called inside a stable scope, it queues the callback to run when the scope is destroyed.
 
 ```luau
-function cleanup(object: Function | Disconnectable | Destroyable | Spring<any> | thread)
+function cleanup(object: Function | Disconnectable | Destroyable | Animatable<unknown> | thread)
 
+type Animatable<T> = Spring<T> | Tween<T>
 type Function = () -> ()
 type Disconnectable = { Disconnect: Function } | { disconnect: Function }
 type Destroyable = { Destroy: Function } | { destroy: Function }
