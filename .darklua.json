@@ -17,6 +17,7 @@
           "@convert": "lib/animation/convert",
           "@creation": "lib/creation",
           "@defaults": "lib/creation/defaults",
+          "@easing_styles": "lib/animation/easing_styles",
           "@effect": "lib/effect",
           "@flags": "lib/flags",
           "@flec": "lib/flec",
@@ -30,6 +31,7 @@
           "@spring": "lib/animation/spring",
           "@subscribe": "lib/subscribe",
           "@sync": "lib/sync",
+          "@tween": "lib/animation/tween",
           "@types": "lib/types"
         }
       },

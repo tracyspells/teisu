@@ -37,7 +37,11 @@ export type Spring<T> = Molecule<T> & {
 	onComplete: (callback: (value: T) -> ()) -> Cleanup,
 }
 
-export type UsedAs<T> = (Molecule<T>) | T
+export type Tween<T> = Molecule<T> & {
+    onComplete: (callback: (value: T) -> ()) -> Cleanup,
+}
+
+export type UsedAs<T> = T | () -> T
 export type Use = <T>(target: UsedAs<T>) -> T
 
 export type PatchOperation = "add" | "remove" | "replace"
@@ -50,6 +54,10 @@ export type Patch<K, V> = {
 export type Animatable = 
 	number | boolean | UDim | UDim2 | Rect | Vector2 | Vector3 | CFrame | Color3 
 	| NumberRange | NumberSequenceKeypoint | ColorSequenceKeypoint
+
+export type EasingDirection = "In" | "Out" | "InOut"
+export type EasingStyle = "Linear" | "Cubic" | "Bounce" | "Elastic" 
+	| "Back" | "Sine" | "Smooth" | "Quad" | "Quart" | "Quint" | "Exponential" | "Circular"
 
 export type SyncPayload = {
 	type: "init",

@@ -1,9 +1,9 @@
 local typeof = game and typeof or require("@mock/").typeof
+local task = game and task or require("@mock/").task
 
 local types = require("@types/")
 local graph = require("@graph/")
 local convert = require("@convert/")
-local batch = require("@batch/")
 local peek = require("@peek/")
 local effect = require("@effect/")
 
@@ -19,9 +19,10 @@ type SpringState<T> = {
 	damping: number,
 	k: number, -- spring constant
 	c: number, -- damping coefficient
-	valueCount: number,
+	
 	completed: boolean?,
 
+	value_count: number,
 	pos: { number },
 	target_pos: { number },
 	vel: { number },
@@ -33,7 +34,6 @@ local createSourceNode = graph.createSourceNode
 local get_root_scope = graph.get_root_scope
 local push_to_root_scope = graph.push_to_root_scope
 local capturing = graph.capturing
-local batched = graph.batched
 
 -- maps spring data to its corresponding output node
 -- lifetime of spring data is tied to output node
@@ -41,8 +41,6 @@ local springs: { [SpringState<unknown>]: Node<unknown> } = setmetatable({} :: an
 
 local VELOCITY_EPSILON = 1E-3
 local POSITION_EPSILON = 1E-4
-
-local UPDATE_RATE = 120
 
 local PI = math.pi
 local TAU = 2 * PI
@@ -62,13 +60,13 @@ local function is_NaN(value: number)
 end
 
 local function step_springs(dt: number)
-	for spring in springs do
+	for spring in next, springs do
 		if spring.completed then continue end
 		
 		local pos, vel, goal = spring.pos, spring.vel, spring.target_pos
 		local completed = 0
 
-		for i = 1, spring.valueCount do
+		for i = 1, spring.value_count do
 			local p, v, g = pos[i], vel[i], goal[i]
 
 			-- calculate displacement
@@ -90,7 +88,7 @@ local function step_springs(dt: number)
 			end
 		end
 
-		if completed == spring.valueCount then
+		if completed == spring.value_count then
 			spring.completed = true
 		end
 	end
@@ -100,7 +98,7 @@ local function update_spring_sources()
 	local results: { [Node<unknown>]: any } = {}
 	local source_node_updates = 0
 
-	for spring, output in springs do
+	for spring, output in next, springs do
 		local result = convert[spring.goalType].pack(spring.pos)
 
 		results[output] = result
@@ -118,41 +116,11 @@ local function update_spring_sources()
 		end
 	end
 
-	if source_node_updates > 0 then
-		batch(function()
-			for source_node, new_value in next, results do
-				batched[source_node] = true
-				source_node.isPartOfBatch = true
-				source_node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new_value
-			end
-		end)
-	end
+	return results, source_node_updates
 end
 
 local function step()
-	local accumulator, frame = 0, 0
-
-	local max_delta = 1 / 5
-	local fixed_rate = 1 / UPDATE_RATE
-
-	return function(deltaTime: number)
-		local steps = 0
-
-		deltaTime = math.min(deltaTime, max_delta)
-		accumulator += deltaTime
-
-		if accumulator > 0 then
-			steps = accumulator // fixed_rate
-			frame += steps
-			accumulator -= (steps * fixed_rate)
-		end
-
-		for _ = 1, steps do
-			step_springs(fixed_rate)
-		end
-
-		update_spring_sources()
-	end
+	return step_springs, update_spring_sources
 end
 
 local function is_spring(value: any): boolean
@@ -228,7 +196,7 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		springs[state] = output
 	end
 
-	function self.onComplete(_, callback: (value: T) -> ()): Cleanup
+	function self.onComplete(callback: (value: T) -> ()): Cleanup
 		if output == nil then
 			error(`spring has been destroyed`)
 		end
@@ -263,7 +231,7 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 
 		state = nil :: never
 
-		if dispose then
+		if dispose and not is_under_root_scope then
 			dispose()
 			dispose = nil :: never
 		end
@@ -368,9 +336,9 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		end
 
 		if changes > 0 then
-			local oldValueCount = state.valueCount
+			local old_value_count = state.value_count
 			local data = convert[goal_type].unpack(goal) :: { number }
-			state.valueCount = #data
+			state.value_count = #data
 			state.target_pos = data
 
 			local n = (TAU / state.speed)
@@ -381,22 +349,24 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 			if updates == 0 then
 				output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = state.goal
 				state.pos, state.vel = table.clone(state.target_pos), table.clone(state.target_pos)
-			elseif updates > 0 and oldValueCount ~= state.valueCount then
-				if oldValueCount > state.valueCount then
-					local removals = oldValueCount - state.valueCount
+			elseif updates > 0 and old_value_count ~= state.value_count then
+				if old_value_count > state.value_count then
+					local removals = old_value_count - state.value_count
 					for _ = 1, removals do
 						table.remove(state.pos)
 						table.remove(state.vel)
 					end
-				elseif state.valueCount > oldValueCount then
-					for i = oldValueCount + 1, state.valueCount do
+				elseif state.value_count > old_value_count then
+					for i = old_value_count + 1, state.value_count do
 						table.insert(state.pos, 0)
 						table.insert(state.vel, 0)
 					end
 				end
 			end
 
-			springs[state] = output
+			if updates > 0 then
+				springs[state] = output
+			end
 		end
 	end)
 

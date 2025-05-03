@@ -15,8 +15,6 @@ local effect = teisu.effect
 local equals = testkit.seq
 local Vector2 = mock.Vector2
 
-type Spring<T> = teisu.Spring<T>
-
 type SKIP = types.SKIP
 type CASE = types.CASE
 type CHECK = types.CHECK
@@ -42,18 +40,21 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local unroot = root(function()
 			output = spring(input, 30, 0.95)
-		end)
 
-		effect(function()
-			output()
-			count += 1
+			effect(function()
+				output()
+				count += 1
+			end)
 		end)
 
 		CHECK(count == 1)
+
 		unroot()
+
 		CHECK(count == 1)
 
 		input(2)
+		
 		CHECK(count == 1)
 	end
 

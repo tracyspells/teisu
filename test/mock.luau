@@ -338,6 +338,47 @@ local typeof = function(v)
         else type(v)
 end :: any
 
+local t = {} :: any do
+    local pending = {}
+
+    local function spawn<T...>(fn: (T...) -> (...any), ...: T...): thread
+        local thread = coroutine.create(fn)
+        coroutine.resume(thread, ...)
+        return thread
+    end
+
+    local function wait(t: number?): number
+        table.insert(pending, { time_left = t or 0, time_waited = 0, thread = coroutine.running() })
+        return coroutine.yield()
+    end
+
+    local function close(thread: thread)
+        coroutine.close(thread)
+    end
+
+    local function step(dt: number?)
+        local delta_time = if not dt then 0.1 else dt
+        
+        for i = #pending, 1, -1 do
+            local data = pending[i]
+
+            data.time_left -= delta_time
+            data.time_waited += delta_time
+
+            if data.time_left <= 0 then
+                pending[i] = pending[#pending]
+                pending[#pending] = nil
+                coroutine.resume(data.thread, data.time_waited)
+            end
+        end
+    end
+
+    t.spawn = spawn
+    t.wait = wait
+    t.cancel = close
+    t.step = step
+end
+
 return table.freeze {
     Signal = Signal,
     Instance = Instance :: typeof(Instance),
@@ -346,5 +387,6 @@ return table.freeze {
     Vector3 = Vector3 :: typeof(Vector3),
     UDim2 = UDim2 :: typeof(UDim2),
     Enum = Enum :: typeof(Enum),
-    typeof = typeof :: typeof(typeof)
+    typeof = typeof :: typeof(typeof),
+    task = t :: typeof(task) & { step: (dt: number?) -> () }
 }
