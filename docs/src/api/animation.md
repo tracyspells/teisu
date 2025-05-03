@@ -23,6 +23,8 @@ type EasingDirection = "In" | "Out" | "InOut"
 
 ## tween()
 
+Creates an object with a value that follows a pre-made animation curve.
+
 ```luau
 type Derivable<T> = Molecule<T> | T
 type Molecule<T> = () -> T
