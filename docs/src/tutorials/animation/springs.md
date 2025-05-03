@@ -56,12 +56,9 @@ end)
 
 You can use many different kinds of values as springs, not just numbers.
 
-- Vector3s
-- CFrames
-- UDim2s
-- booleans
+<!--@include: @api/animation.md{5,9}-->
 
-...and many more types are supported.
+The above is a list of all supported value types to animate.
 
 ## Speed
 
