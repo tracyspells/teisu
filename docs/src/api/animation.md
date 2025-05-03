@@ -8,6 +8,74 @@ type Animatable =
     | NumberRange | ColorSequenceKeypoint | NumberSequenceKeypoint
 ```
 
+## EasingStyle
+
+```luau
+type EasingStyle = "Linear" | "Cubic" | "Bounce" | "Elastic" 
+	| "Back" | "Sine" | "Smooth" | "Quad" | "Quart" | "Quint" | "Exponential" | "Circular"
+```
+
+## EasingDirection
+
+```luau
+type EasingDirection = "In" | "Out" | "InOut"
+```
+
+## tween()
+
+```luau
+type Derivable<T> = Molecule<T> | T
+type Molecule<T> = () -> T
+
+type Cleanup = () -> ()
+
+type TweenProps = {
+    duration: Derivable<number>,
+    delay: Derivable<number>?,
+    style: Derivable<EasingStyle>?
+    direction: Derivable<EasingDirection>?,
+    reverses: Derivable<boolean>?,
+	repeats: Derivable<number>?,
+}
+
+
+type Tween<T = Animatable> = Molecule<T> & {
+    onComplete: (callback: (value: T) -> ()) -> Cleanup,
+}
+
+function tween<T>(
+    goal: Molecule<T & Animatable>,
+    props: TweenProps
+): Tween<T>
+```
+
+### Parameters
+
+-   `goal`: A molecule that represents the goal the tween should follow.
+
+-   `props`: Determines the easing curve that the tween will follow.
+
+    -   `duration`: How long (in seconds) it takes to go from point A to B Defaults to `1` second.
+
+    -   `style`: The style in which the tween executes.
+
+    -   `direction`: The direction in which the tween executes.
+
+    -   `reverses`: Whether or not the tween interpolates in reverse once the initial tween completes.
+
+    -   `delay`: Delays the tween before it begins, in seconds.
+
+    -   `repeats`: Number of times the tween repeats. `-1` indicates indefinite repetition.
+
+### Returns
+
+Returns a tween object with the following methods:
+
+-   `.onComplete(listener)`: Calls `listener` whenever a tween finishes animating. Returns a function that disconnects the listener.
+
+Call the tween object to get its current value.
+
+
 ## spring()
 
 Creates an object with a value always moving towards the goal value.

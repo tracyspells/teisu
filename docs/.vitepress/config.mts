@@ -59,6 +59,7 @@ export default defineConfig({
           text: "Animation",
           items: [
             { text: "Springs", link: "/tutorials/animation/springs" },
+            { text: "Tweens", link: "/tutorials/animation/tweens" },
           ],
         },
 
