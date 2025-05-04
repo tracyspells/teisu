@@ -53,18 +53,20 @@ do
 		local node: Node<any>
 		
 		local disconnected = false
-		local new_children: Set<Instance>, prev_children: Set<Instance> = {}, {}
+
+		local cur_children: Set<Instance> = {} -- cache of all children parented before update
+		local new_children: Set<Instance> = {} -- cache of all children parented after update
 
 		local function process_child(child: Instance | { Instance })
 			if type(child) == "userdata" then
-				if not new_children[child] then
-					new_children[child] = true
-				end
+				if new_children[child] then return end -- prevents redundant parenting
 
-				if not prev_children[child] then
-					child.Parent = instance
+				new_children[child] = true -- record child set from this update
+
+				if not cur_children[child] then
+					child.Parent = instance -- if child wasn't already parented then parent it
 				else
-					prev_children[child] = nil
+					cur_children[child] = nil -- remove child from cache if it was already in cache
 				end
 			elseif type(child) == "table" then
 				for _, c in next, child do
@@ -89,12 +91,12 @@ do
 		end
 
 		local function destroy()
-			for child in prev_children do
+			for child in cur_children do
 				child.Parent = nil
 			end
 
 			table.clear(new_children)
-			table.clear(prev_children)
+			table.clear(cur_children)
 			dispose()
 		end
 
@@ -105,12 +107,12 @@ do
 
 			process_child(source())
 
-			for child in prev_children do
+			for child in cur_children do
 				child.Parent = nil
 			end
 
-			table.clear(prev_children)
-			prev_children, new_children = new_children, prev_children
+			table.clear(cur_children)
+			cur_children, new_children = new_children, cur_children
 		end)
 
 		if not owner and layer == 0 then
