@@ -13,6 +13,8 @@ ServerPackages
 roblox.yml
 roblox.toml
 
+test/excluded_tests
+
 dist/
 
 docs/.vitepress/dist
