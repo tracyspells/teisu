@@ -113,7 +113,7 @@ return function(callback: () -> ())
 
 			for child in next, entry.children do
 				local isDirectChild = child.parents[source_node] == true
-				local isChildEager = child.eager ~= nil and true or false
+				local isChildEager = child.eager == true
 				local isEmpty = next(child.children) == nil
 
 				child.state = if isDirectChild then "dirty" else "check"
