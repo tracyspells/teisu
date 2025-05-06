@@ -78,8 +78,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local cleanups = 0
 
-		local dispose = effect(function(_, on_change)
-			on_change(function() cleanups += 1 end)
+		local dispose = effect(function()
+			cleanup(function() cleanups += 1 end)
 			a()
 		end)
 
@@ -159,12 +159,10 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		local mounted = false
 		local disposed = false
 
-		local dispose = effect(function(_, on_change)
+		local dispose = effect(function()
+			cleanup(function() disposed = true end)
+
 			mounted = true
-			
-			on_change(function() 
-				disposed = true 
-			end)
 		end)
 
 		CHECK(mounted == true)

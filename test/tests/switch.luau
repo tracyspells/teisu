@@ -54,7 +54,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         local input = flec(0)
         local function component() 
-            return {} 
+            return 1
         end
 
         local output = switch(input) {
@@ -160,6 +160,6 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         CHECK(output() == 1)
         cleanup(output)
-        CHECK(output() == nil)
+        CHECK(output() == 1)
     end
 end
