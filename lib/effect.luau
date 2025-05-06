@@ -1,65 +1,43 @@
 local types = require("@types/")
 local graph = require("@graph/")
-local peek = require("@peek/")
 
-type Set<T> = types.Set<T>
-
-type Molecule<T> = types.Molecule<T>
 type Node<T> = types.Node<T>
-
 type Cleanup = () -> ()
 
 local evaluate = graph.evaluate
 local createNode = graph.createEagerNode
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
+local get_scope = graph.get_scope
+local new_scope = graph.new_scope
+local push_scope = graph.push_scope
+local pop_scope = graph.pop_scope
+local push_cleanup = graph.push_cleanup
+local destroy_scope = graph.destroy_scope
+local depend = graph.depend
+local flush_captures = graph.flush_captures
+local try = graph.try
 
-local function effect(callback: (dispose: Cleanup, on_change: (Cleanup) -> ()) -> ()): Cleanup
-	local node: Node<any>
-	local cleanups: { Cleanup } = {}
+local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, initial_state: T): Cleanup
+	local node: Node<T>
 	local disconnected = false
-	local evaluations = 0
-	local owner = get_root_scope()
-
-	local function add_to_cleanups(fn: Cleanup?)
-		if type(fn) ~= "function" or disconnected then
-			return
-		end
-
-		table.insert(cleanups, fn)
-	end
-
-	local function do_cleanup()
-		local count = #cleanups
-		if count <= 0 then
-			return
-		end
-
-		for index = count, 1, -1 do
-			local cleanup = cleanups[index]
-
-			if not cleanup then
-				continue
-			end
-
-			cleanup()
-		end
-
-		table.clear(cleanups)
-	end
+	
+	local owner = get_scope()
+	local inner_scope: graph.Scope?
 
 	local function dispose()
 		if not disconnected then
-			disconnected, evaluations = true, nil :: never
+			disconnected = true
 
 			for parent in next, node.parents do
 				parent.children[node] = nil
 				node.parents[parent] = nil
 			end
 			
-			node = nil :: never
+			if inner_scope ~= nil then
+				destroy_scope(inner_scope)
+				inner_scope = nil
+			end
 
-			peek(do_cleanup)
+			node = nil :: never
 		end
 	end
 
@@ -68,21 +46,49 @@ local function effect(callback: (dispose: Cleanup, on_change: (Cleanup) -> ()) -
 			return
 		end
 
-		evaluations += 1
-		if evaluations > 1 then
-			peek(do_cleanup)
+		if inner_scope ~= nil then
+			destroy_scope(inner_scope)
+			inner_scope = nil
 		end
 
-		callback(dispose, add_to_cleanups)
+		local scope = new_scope(owner)
+		
+		push_scope(scope)
+		local new_value = try(
+			callback,
+			function() pop_scope() end,
+			function() destroy_scope(scope) end,
+			dispose,
+			node.cache :: T
+		)
+
+		if not disconnected then -- `dispose()` can still be called inside the callback
+			inner_scope = scope
+
+			local result: any = new_value
+			if type(result) == "table" then
+				-- create a shallow copy so that functions like `subscribe` 
+				-- can work properly
+				result = table.clone(result) 
+			end
+
+			node.cache = result :: T
+			depend(scope, node)
+			flush_captures(scope)
+		end
 	end)
 
 	if owner then
-		push_to_root_scope(owner, node, dispose)
+		push_cleanup(owner, dispose, node)
 	end
+
+	node.cache = initial_state
 
 	evaluate(node)
 
 	return dispose
 end
 
-return effect :: ((callback: () -> ()) -> Cleanup) & ((callback: (dispose: () -> ()) -> ()) -> Cleanup) & ((callback: (dispose: () -> (), on_change: (Cleanup) -> ()) -> ()) -> Cleanup)
+return effect :: ((callback: () -> ()) -> Cleanup) 
+ & ((callback: (dispose: Cleanup) -> ()) -> Cleanup) 
+ & (<T>(callback: (dispose: Cleanup, previous_state: T) -> T, initial_state: T) -> Cleanup)

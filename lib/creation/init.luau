@@ -10,10 +10,11 @@ local cleanup = require("@cleanup/")
 type Map<K, V> = types.Map<K, V>
 type Cleanup = types.Cleanup
 type Props = Map<any, any>
-type RootScope = graph.RootScope
 
+local new_scope = graph.new_scope
 local push_scope = graph.push_scope
-local remove_scope = graph.remove_scope
+local pop_scope = graph.pop_scope
+local destroy_scope = graph.destroy_scope
 
 local ctor_cache = setmetatable({} :: { [string]: () -> Instance }, {
 	__index = function(self, class: string)
@@ -72,35 +73,22 @@ local function new(class_or_instance: string | Instance, props: Props?): ((Props
 end
 
 local function root<T...>(fn: () -> T...): (Cleanup, T...)
-	local scope = {
-		type = "root",
-		already_queued = {},
-		n = 0,
-	} :: RootScope
+	local scope = new_scope()
+	local is_destroyed = false
 	
 	local destroy = function()
-		if scope == nil then
+		if is_destroyed then
 			error(`root already destroyed`)
 			return
 		end
 
-		if scope.n > 0 then
-			for i = scope.n, 1, -1 do
-				local fn = scope[i]
-				if not fn then
-					continue
-				end
-				fn()
-			end
-		end
-		
-		scope = nil :: never
+		is_destroyed = true
+		destroy_scope(scope)
 	end
 
 	local index = push_scope(scope)
 	local result = { xpcall(fn, debug.traceback) }
-
-	remove_scope(index)
+	pop_scope(index)
 
 	if not result[1] then
 		destroy()

@@ -11,22 +11,26 @@ type Node<T> = types.Node<T>
 type NodeState = types.NodeState
 type NodeNonCleanState = types.NodeNonCleanState
 
-export type Scope = Map<any, any>
-export type RootScope = { [number]: Cleanup, n: number, type: "root", already_queued: { [any]: number } }
+type Task = (Instance | types.Animated<any> | types.Destroyable | types.Disconnectable | thread)
+
+export type Scope = {
+	cleanups: { Task | Cleanup } | false, -- { object, cleanup_function }
+	captures: { [Node<any>]: boolean } | false,
+	owned: { Scope } | false,
+    owner: Scope | false,
+	type: ("cleanup")?,
+}
 
 local batched: Set<Node<any>> = {}
 local capturing = { n = 0 } :: { [number]: Scope, n: number }
 
 local NODE_KEY = newproxy()
 
-local function new_scope(): (number, Scope)
-	local scope = {}
-
-	local index = capturing.n + 1
-	capturing.n = index
-	capturing[index] = scope
-
-	return index, scope
+local function find_and_swap_pop<T>(t: { T }, v: T)
+    local i = table.find(t, v) :: number
+    local n = #t
+    t[i] = t[n]
+    t[n] = nil
 end
 
 local function push_scope(scope: Scope): number
@@ -37,56 +41,113 @@ local function push_scope(scope: Scope): number
 	return n
 end
 
-local function remove_scope(index: number)
-	if capturing[index] == nil then
-		return
-	end
+local function pop_scope(index: number?)
+	if capturing.n == 0 then return end
 
-	local n = index - 1
-	capturing.n = n
-	capturing[index] = nil
+	local n_now = index or capturing.n
+
+	if capturing[n_now] == nil then return end
+
+	local n_new = n_now - 1
+	capturing.n = n_new
+	capturing[n_now] = nil
 end
 
 local function get_scope(index: number?): Scope?
 	return capturing[index or capturing.n]
 end
 
-local function get_root_scope(): RootScope?
-	if capturing.n == 0 then
-		return
+local function new_scope(owner: Scope?, type: ("cleanup")?): Scope
+	local scope: Scope = {
+		cleanups = false,
+		captures = false,
+		owned = false,
+		owner = if owner ~= nil then owner else false,
+		type = type,
+	}
+
+	if owner ~= nil then
+		if owner.owned ~= false then
+			table.insert(owner.owned, scope)
+		else
+			owner.owned = { scope }
+		end
 	end
 
-	local current_scope = get_scope()
-	if not current_scope or current_scope.type ~= "root" then
-		return
-	end
-
-	return current_scope
+	return scope
 end
 
-local function push_to_root_scope(scope: RootScope, object: any, cleanup: () -> ()): number
-	if scope.already_queued[object] then
-		return scope.already_queued[object]
+local function push_cleanup(scope: Scope, cleanup: Cleanup, object: any)
+	if scope.cleanups then
+		table.insert(scope.cleanups, object)
+		table.insert(scope.cleanups, cleanup)
+	else
+		scope.cleanups = { object, cleanup }
 	end
-
-	local n = scope.n + 1
-	scope.n = n
-	scope[n] = cleanup
-	scope.already_queued[object] = n
-
-	return n
 end
 
-local function remove_from_root_scope(scope: RootScope, object: any)
-	if not scope.already_queued[object] then
+local function flush_cleanups(scope: Scope)
+	if not scope.cleanups then
 		return
 	end
 
-	local index = scope.already_queued[object]
-	local n = index - 1
-	scope.already_queued[object] = nil
-	scope[index] = nil
-	scope.n = n
+	local list = scope.cleanups
+	local len = #list
+	
+	if len == 2 then
+		local cleanup = list[2] :: Cleanup
+		cleanup()
+	elseif len > 2 then
+		local already_cleaned_up: { [Task]: boolean } = {}
+
+		for i = len, 1, -2 do
+			local cleanup = list[i] :: Cleanup
+			local object = list[i - 1] :: Task
+			
+			if not already_cleaned_up[object] then
+				already_cleaned_up[object] = true
+				cleanup()
+			end
+		end
+	end
+
+	table.clear(scope.cleanups)
+	scope.cleanups = false
+end
+
+local function flush_captures(scope: Scope)
+	if scope.captures ~= false then
+		table.clear(scope.captures)
+		scope.captures = false
+	end
+end
+
+local function push_child_to_scope<T>(scope: Scope, node: Node<T>)
+	if scope.type == "cleanup" then return end
+	
+	if scope.captures ~= false then
+		scope.captures[node] = true
+	else
+		local captures = {}
+		captures[node] = true
+		scope.captures = captures
+	end
+end
+
+local function destroy_scope(scope: Scope)
+	flush_captures(scope)
+	flush_cleanups(scope)
+	
+	if scope.owner ~= false then
+		find_and_swap_pop(scope.owner.owned :: { Scope }, scope)
+		scope.owner = false
+	end
+
+	if scope.owned ~= false then
+		local owned = scope.owned
+
+		while owned[1] do destroy_scope(owned[1]) end
+	end
 end
 
 local function createSourceNode<T>(initialState: T): Node<T>
@@ -95,7 +156,7 @@ local function createSourceNode<T>(initialState: T): Node<T>
 		children = {},
 		state = "clean",
 		createdAt = os.clock(),
-		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = initialState,
+		cache = initialState,
 		nickname = "flec",
 		effect = false,
 	}
@@ -107,7 +168,7 @@ local function createDerivedNode<T>(effect: () -> ()): Node<T>
 		children = {},
 		state = "dirty",
 		createdAt = os.clock(),
-		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = false,
+		cache = false,
 		nickname = "computed",
 		effect = effect,
 	}
@@ -119,7 +180,7 @@ local function createEagerNode<T>(effect: (...any) -> ()): Node<T>
 		children = table.freeze {},
 		state = "dirty",
 		createdAt = os.clock(),
-		___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = false,
+		cache = false,
 		effect = effect,
 		nickname = "effect",
 		eager = true,
@@ -136,8 +197,18 @@ local function establishBonds(child: Node<any>, parent: Node<any>)
 	parent.children[child] = true
 end
 
+local function depend<T>(scope: Scope, node: Node<T>)
+	if scope.captures == false or node == nil then
+		return
+	end
+
+	for parent in next, scope.captures do
+		establishBonds(node, parent)
+	end
+end
+
 local function castToNode<T>(target: T): Node<T>?
-	if typeof(target) ~= "table" or target.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value == nil then
+	if typeof(target) ~= "table" or target.cache == nil then
 		return nil
 	end
 
@@ -162,52 +233,65 @@ local function isSourceNode(value: any): (boolean, Node<any>?)
 	return node.eager == nil and node.effect == false, node
 end
 
-local function try<T...>(
-	callback: (T...) -> (),
-	on_error: () -> (),
-	on_success: () -> (),
+local function try<T..., U...>(
+	callback: (T...) -> U...,
+	finally: (() -> ())?,
+	on_error: (() -> ())?,
 	...: T...
-)
+): U...
 	if flags.strict then
-		local thread = coroutine.create(callback, ...)
-		local ok, result: string? = coroutine.resume(thread)
+		local thread = coroutine.create(callback)
+		local result = { coroutine.resume(thread, ...) }
+
+		if finally then
+			finally()
+		end
 
 		if coroutine.status(thread) == "suspended" then
 			local source: string, line: number, name: string = debug.info(callback, "sln")
-
 			coroutine.close(thread)
-			on_error()
 
+			if on_error ~= nil then
+				on_error()
+			end
+			
 			error(
 				"Cannot yield inside a reactive function. Consider wrapping this code in a Promise, task.spawn, or task.defer instead."
 					.. `\nFunction defined at: {source}:{line}`
 					.. if name == "" then "" else ` function {name}`
 			)
-			return
-		elseif not ok then
+		elseif not result[1] then
 			local source: string, line: number, name: string = debug.info(callback, "sln")
-			on_error()
+
+			if on_error ~= nil then
+				on_error()
+			end
 
 			error(
 				"An error occurred while running an reactive function"
 					.. `\nFunction defined at: {source}:{line}`
 					.. (if name == "" then "" else ` function {name}`)
-					.. `\nError: {result}`
+					.. `\nError: {result[2]}`
 			)
-			return
 		end
 
-		on_success()
+		return unpack(result :: any, 2)
 	else
-		local ok, message: string? = pcall(callback, ...)
+		local result = { pcall(callback, ...) }
 
-		if not ok then
-			on_error()
-			error(message)
-			return
+		if finally then
+			finally()
 		end
 
-		on_success()
+		if not result[1] then
+			if on_error ~= nil then
+				on_error()
+			end
+
+			error(result[2])
+		end
+
+		return unpack(result :: any, 2)
 	end
 end
 
@@ -220,23 +304,7 @@ local function update<T>(node: Node<T>)
 
 	local effect = node.effect :: (() -> ()) | false
 	if type(effect) == "function" then
-		local parents: Set<Node<any>> = {}
-		local index = push_scope(parents)
-
-		try(
-			effect, 
-			function() 
-				remove_scope(index)
-				parents = nil :: never
-			end,
-			function() 
-				remove_scope(index)
-
-				for parent in next, parents do
-					establishBonds(node, parent)
-				end
-			end
-		)
+		effect()
 	end
 
 	for child in next, node.children do
@@ -288,7 +356,7 @@ local function updateDescendants(sourceNode: Node<any>)
 
 		for child in next, children do
 			local isDirectChild = child.parents[sourceNode] == true
-			local isChildEager = child.eager ~= nil and true or false
+			local isChildEager = child.eager == true
 			local isEmpty = next(child.children) == nil
 
 			child.state = if isDirectChild then "dirty" else "check"
@@ -304,29 +372,26 @@ local function updateDescendants(sourceNode: Node<any>)
 		end
 	until #queue <= 0 or children == nil
 
-	table.clear(eagerNodesSeen)
-
 	for _, node in next, eagerNodes do
 		updateIfNecessary(node)
 	end
-
-	table.clear(eagerNodes)
 end
 
 return table.freeze {
 	NODE_KEY = NODE_KEY,
-	capturing = capturing,
 	batched = batched,
 
 	try = try,
 	
 	push_scope = push_scope,
 	new_scope = new_scope,
-	remove_scope = remove_scope,
+	pop_scope = pop_scope,
 	get_scope = get_scope,
-	get_root_scope = get_root_scope,
-	push_to_root_scope = push_to_root_scope,
-	remove_from_root_scope = remove_from_root_scope,
+	destroy_scope = destroy_scope,
+	push_child_to_scope = push_child_to_scope,
+	push_cleanup = push_cleanup,
+	flush_cleanups = flush_cleanups,
+	flush_captures = flush_captures,
 
 	createSourceNode = createSourceNode,
 	isSourceNode = isSourceNode,
@@ -336,4 +401,5 @@ return table.freeze {
 	castToReactable = castToReactable,
 	updateDescendants = updateDescendants,
 	establishBonds = establishBonds,
+	depend = depend
 }
