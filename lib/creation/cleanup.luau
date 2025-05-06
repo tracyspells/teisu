@@ -5,16 +5,15 @@ local spring = require("@spring/")
 local tween = require("@tween/")
 local graph = require("@graph/")
 
-type Spring<T> = types.Spring<T>
-
-type Destroyable = { destroy: (any) -> () } | { Destroy: (any) -> () }
-type Disconnectable = { disconnect: (any) -> () } | { Disconnect: (any) -> () }
+type Task = types.Task
 
 local is_spring, is_tween = spring.is_spring, tween.is_tween
+local get_scope = graph.get_scope
+local new_scope = graph.new_scope
 local push_scope = graph.push_scope
-local remove_scope = graph.remove_scope
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
+local pop_scope = graph.pop_scope
+local push_cleanup = graph.push_cleanup
+local flush_cleanups = graph.flush_cleanups
 
 local function get_cleanup(obj: any): () -> ()
 	return if typeof(obj) == "RBXScriptConnection"
@@ -46,29 +45,23 @@ local function get_cleanup(obj: any): () -> ()
 end
 
 local function do_cleanup(fn: () -> ())
-	local cleanup_scope = { type = "cleanup" } :: { [number]: () -> (), type: "cleanup" }
-	local index = push_scope(cleanup_scope)
+	local scope = new_scope(nil, "cleanup")
+
+	push_scope(scope)
 
 	fn()
-
-	remove_scope(index)
-
-	if cleanup_scope[1] ~= nil then
-		cleanup_scope[1]()
-	end
-
-	table.clear(cleanup_scope)
+	
+	pop_scope()
+	flush_cleanups(scope)
 end
 
-local function cleanup(object: any)
-	local scope = get_root_scope()
+return function(object: Task)
+	local scope = get_scope()
 	local fn = type(object) == "function" and object :: () -> () or get_cleanup(object)
 
 	if not scope then
 		return do_cleanup(fn)
 	end
 
-	push_to_root_scope(scope, object, fn)
+	push_cleanup(scope, fn, object)
 end
-
-return cleanup :: ((callback: () -> ()) -> ()) & ((thread: thread) -> ()) & ((instance: Destroyable) -> ()) & ((connection: Disconnectable) -> ()) & ((instance: Instance) -> ()) & ((connection: RBXScriptConnection) -> ())
