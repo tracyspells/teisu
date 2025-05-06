@@ -37,9 +37,9 @@ local unroot = root(function()
         print('cleaned')
     end)
 
-    cleanup(effect(function()
+    effect(function()
         print(`{source()}`)
-    end))
+    end)
 end)
 
 source(1)

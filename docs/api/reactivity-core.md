@@ -6,7 +6,7 @@ Creates a new flec.
 
 ```luau
 function flec<T>(state: T): Flec<T>
-function flec<T>(state: T, equals: (T, T) -> boolean): Flec<T>
+function flec<T>(state: T, equals: (old: T, new: T) -> boolean): Flec<T>
 
 type Flec<T> = 
     () -> T -- get
@@ -59,7 +59,7 @@ Derives a new, read-only flec from one or more flecs.
 
 ```luau
 function computed<T>(callback: () -> T): () -> T
-function computed<T>(callback: () -> T, equals: (T, T) -> boolean)
+function computed<T>(callback: () -> T, equals: (old: T, new: T) -> boolean)
 ```
 
 `computed` will cache the result to prevent recomputations on every read.
@@ -71,9 +71,25 @@ function computed<T>(callback: () -> T, equals: (T, T) -> boolean)
 
 -  **optional** `equals`: An optional equality function to determine whether `state` should change. Defaults to reference equality (`==`).
 
+    ::: warning Custom equality function
+    If `equals` is passed in as an argument inside the `computed` constructor, theres a chance that the `old` argument will be `nil` when a `computed` calculates a result for the first time.
+
+    If this happens to you, ensure that you have a guard clause like this set up in your custom function:
+
+    ```luau {2-4}
+    local function equals<T>(old: T, new: T): boolean
+        if old == nil or new == nil then
+            return false
+        end
+
+        -- do your custom equality checks here
+    end
+    ```
+    :::
+
 ### Returns
 
-`computed` returns a read-only flec.
+`computed` returns a [read-only flec](../tutorials/fundamentals/molecules).
 
 ::: danger
 Computed calculations should be immediate and <u>never delay</u>. You should never use a `computed` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
@@ -110,7 +126,7 @@ type Cleanup = () -> ()
 
 function effect(callback: () -> ()): Cleanup
 function effect(callback: ( dispose: () -> () ) -> ()): Cleanup
-function effect(callback: ( dispose: () -> (), on_change: Cleanup ) -> ()): Cleanup
+function effect<T>(callback: ( dispose: () -> (), initial_state: T ) -> T): Cleanup
 ```
 
 ### Parameters
@@ -174,11 +190,27 @@ end)
 task.wait(2)
 condition("bad") --> destroying effect...
 ```
+
+```luau [Example C]
+local condition = flec("good")
+
+effect(function(_, old)
+    local new = condition()
+
+    if old ~= new then
+        print(`condition changed: {condition}`)
+    end
+
+    return new
+end, nil)
+
+task.delay(2, condition, "bad")
+```
 :::
 
-### Schedule Changes
+### Schedule cleanups
 
-A special `on_change` function is passed in to the `effect` callback. Functions passed as an argument to this `on_change` function will run:
+You can schedule cleanup functions inside an effect via [`cleanup()`](./reactivity-utility#cleanup). These functions will run:
 
 1. Before each re-invocation of the `effect` callback (i.e. when one or more dependencies change)
 2. When the `effect` itself is destroyed (if there were any functions scheduled, they will run on effect destruction)
@@ -186,9 +218,11 @@ A special `on_change` function is passed in to the `effect` callback. Functions 
 **Example Usage:**
 
 ```luau
+local cleanup = Teisu.cleanup
+
 local count = flec(0)
-local dispose = effect(function(_, on_change)
-    on_change(function()
+local dispose = effect(function()
+    cleanup(function()
         print("count has changed!")
     end)
 
@@ -197,7 +231,7 @@ end)
 
 count(count() + 1) -- prints `count has changed!`, and then `1`
 count(count() + 1) -- prints `count has changed!`, and then `2`
-dispose() -- will not print anything, on_change functions have been cleaned up at this point
+dispose() -- will not print anything, everything has been cleaned up at this point
 ```
 
 
@@ -226,9 +260,9 @@ function root<T...>(callback: () -> T...): (Cleanup, T...)
 local unroot, source = root(function()
     local messageFlec = flec("Hello, world!")
 
-    cleanup(effect(function()
+    effect(function()
         print(`{messageFlec()}`)
-    end))
+    end)
 
     return messageFlec
 end)

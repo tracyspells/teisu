@@ -14,28 +14,27 @@ type Derivable<T> = (Molecule<T>) | T
 
 type MapMolecule<K, V> = Molecule<Map<K, V>>
 
-function mapped<K0, V0, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> V1?): MapMolecule<K0, V1>
-function mapped<K0, V0, K1, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> (V1?, K1?)): MapMolecule<K1, V1>
-function mapped<K0, V0, K1, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> (V1?, K1)): MapMolecule<K1, V1>
+function mapped<K0, K1, V0, V1>(
+    state: Derivable<Map<K0, V0>>, 
+    mapper: (V0, K0) -> (V1?, K1?)
+): MapMolecule<K1, V1>
 ```
 
 ### Parameters
 
 -   `state`: A molecule that returns a dictionary or an array that you want to map over.
 
--   `mapper`: A function that is called for each key and value in your `state`. For each key and value, this function will return a new value and key:
-
-    1. Return a single value to map your `state`'s original key to a new value.
-    2. Return two values, the first being the value and the second the key, to update both keys and values in your `state`.
-    3. Return `nil` for the value to remove the key from the resulting `state`.
+-   `mapper`: A function that is called for each key and value in your `state`. The mapper can return a value and a key. If the mapper function doesn't return a key, the original key will be used.
 
 
 ### Returns
 
 `mapped` returns a read-only flec.
 
-**Example:**
-```luau
+**Examples:**
+
+::: code-group
+```luau [Example A]
 type Todo = { id: number, value: string }
 
 local todosFlec: Flec<{ Todo }> = flec({})
@@ -43,6 +42,17 @@ local todosById = mapped(todosAtom, function(todo, index)
 	return todo.value, todo.id
 end)
 ```
+
+```luau [Example B]
+local test = flec({ 1, 2, 3 })
+local result = mapped(test, function(number) 
+   return number * 2
+end)
+
+print(result()) --> { 2, 4, 6 }
+```
+:::
+
 
 ## show()
 
@@ -69,7 +79,7 @@ function show<T, U>(input: Derivable<unknown>, component: () -> T, fallback: () 
 
 1. If the result from `input` is set to `nil`, the output of `show` is `nil`.
 2. If the result from `input` is set to `true`, `show` will return the result from `component`.
-2. If `fallback` is enabled and the result from `input` is set to `false`, `show` will return the result from `fallback`.
+3. If `fallback` is enabled and the result from `input` is set to `false`, `show` will return the result from `fallback`.
 
 **Example:**
 

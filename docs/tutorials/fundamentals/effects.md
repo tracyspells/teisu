@@ -119,35 +119,4 @@ effect(function(dispose)
 end)
 ```
 
-### Schedule changes
-
-<!--@include: @api/reactivity-core.md{180,186}-->
-
-::: code-group
-
-```luau [Luau code]
-local count = flec(0)
-
-effect(function(_, on_change)
-    on_change(function()
-        print(`count has changed!`)
-    end)
-
-    print(`count: {count()}`)
-end)
-
-count(1)
-count(2)
-```
-
-```luau [Output]
-count: 0
-count has changed! -- [!code highlight]
-count: 1
-count has changed! -- [!code highlight]
-count: 2
-```
-
-:::
-
 Effects, when used effectively and efficiently, can make state management feel awesome. In the next section, you'll discover Teisu's built in methods to simplify change tracking.
