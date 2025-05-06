@@ -66,6 +66,7 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 			node.cache = new
 		end
 	end)
+	node.cache = nil :: never
 
 	if owner then
 		push_cleanup(owner, destroy, node)
