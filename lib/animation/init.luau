@@ -59,13 +59,13 @@ local function step()
 				for source_node, new_value in next, tween_sources do
 					batched[source_node] = true
 					source_node.isPartOfBatch = true
-					source_node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new_value
+					source_node.cache = new_value
 				end
 
 				for source_node, new_value in next, spring_sources do
 					batched[source_node] = true
 					source_node.isPartOfBatch = true
-					source_node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new_value
+					source_node.cache = new_value
 				end
 			end)
 		end

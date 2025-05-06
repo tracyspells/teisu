@@ -56,9 +56,9 @@ type TweenProps = {
 }
 
 local createSourceNode = graph.createSourceNode
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
-local capturing = graph.capturing
+local get_scope = graph.get_scope
+local push_child_to_scope = graph.push_child_to_scope
+local push_cleanup = graph.push_cleanup
 
 -- maps tween data to its corresponding output node
 -- lifetime of tween data is tied to output node
@@ -114,7 +114,7 @@ local function is_valid_direction(value: any): boolean
 end
 
 local function step_tweens(dt: number)
-	for tween in next, tweens do
+	for tween in tweens do
 		if tween.repeats ~= 0 and tween.repeat_count > tween.repeats and not tween.completed then
 			tween.completed = true
 		end
@@ -171,7 +171,7 @@ local function update_tween_sources()
 	local results: { [Node<unknown>]: any } = {}
 	local source_node_updates = 0
 
-	for tween, output in next, tweens do
+	for tween, output in tweens do
 		local result = convert[tween.goalType].pack(tween.pos)
 
 		results[output] = result
@@ -208,7 +208,7 @@ end
 local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 	local tween_props = get_tween_props(props)
 
-	local owner = get_root_scope()
+	local owner = get_scope()
 
 	local output = createSourceNode(nil :: T?)
 	output.nickname = "tween"
@@ -241,14 +241,15 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 		end
 	end
 
-	local is_under_root_scope, cleaned_up = false, false
+	local cleaned_up = false
 	local updates = -1
 	local dispose
 	local cleanup = function()
 		if cleaned_up then
 			return
 		end
-		cleaned_up, is_under_root_scope = true, nil :: never
+
+		cleaned_up = true
 		updates = nil :: never
 
 		if tweens[state] then
@@ -257,7 +258,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 		state = nil :: never
 
-		if dispose and not is_under_root_scope then
+		if dispose and not owner then
 			dispose()
 			dispose = nil :: never
 		end
@@ -275,17 +276,17 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 				end
 
 				if select("#", ...) == 0 then
-					if capturing.n > 0 then
-						local scope = capturing[capturing.n]
-
-						if scope.type == nil then
-							scope[output] = true
-						elseif scope.type == "cleanup" and not is_under_root_scope then
-							table.insert(scope, cleanup)
+					local scope = get_scope()
+			
+					if scope then
+						if scope.type == "cleanup" and not owner then
+							return push_cleanup(scope, cleanup, self)
 						end
+
+						push_child_to_scope(scope, output)
 					end
 
-					return output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+					return output.cache :: T
 				end
 
 				local target = ...
@@ -302,8 +303,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 	self = table.freeze(self)
 
 	if owner then
-		push_to_root_scope(owner, self, cleanup)
-		is_under_root_scope = true
+		push_cleanup(owner, cleanup, self)
 	end
 
 	dispose = effect(function()
@@ -399,7 +399,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 			state.target_pos = data
 
 			if updates == 0 then
-				output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = state.goal
+				output.cache = state.goal
 				
 				state.pos = table.create(state.value_count, 0)
 			end
