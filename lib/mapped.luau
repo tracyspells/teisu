@@ -1,10 +1,8 @@
+local typeof = game and typeof or require("@mock/").typeof
 local types = require("@types/")
 local graph = require("@graph/")
-local batch = require("@batch/")
 local peek = require("@peek/")
 local flec = require("@flec/")
-local computed = require("@computed/")
-local cleanup = require("@cleanup/")
 
 type Map<K, V> = types.Map<K, V>
 type Molecule<T> = types.Molecule<T>
@@ -13,7 +11,7 @@ type Node<T> = types.Node<T>
 type UsedAs<T> = types.UsedAs<T>
 type Scope = graph.Scope
 type SubObject<K0, V0, K1, V1> = {
-	input_key: Flec<K0>,
+	input_key: K0,
 	input_value: Flec<V0>,
 	get_output: () -> ((K1 | K0)?, V1?),
 	destroy: () -> (),
@@ -29,52 +27,65 @@ local push_cleanup = graph.push_cleanup
 local flush_captures = graph.flush_captures
 local push_child_to_scope = graph.push_child_to_scope
 local evaluate = graph.evaluate
-local depend = graph.depend
+local depend, unparent = graph.depend, graph.unparent
 local try = graph.try
 
 local INFINITY = math.huge
 
 local function create_sub_object<K0, V0, K1, V1>(
+	owner: graph.Scope,
 	input_key: K0,
 	input_value: V0,
-	mapper: (V0, K0) -> (V1, K1?)
+	mapper: (Molecule<V0>, K0) -> (V1, K1?)
 ): SubObject<K0, V0, K1, V1>
-	local key = flec(input_key)
+	local scope = new_scope(owner)
 	local value = flec(input_value)
+	local instance_cache: { value: Instance, key: (K0 | K1) }
 
 	local object = {}
-	object.input_key = key
+	object.input_key = input_key
 	object.input_value = value
+	object.destroy = function() 
+		table.clear(object)
+		destroy_scope(scope) 
+	end
+	object.get_output = function(): ((K1 | K0)?, V1?)
+		if instance_cache ~= nil then
+			return instance_cache.key, instance_cache.value :: any
+		end
 
-	local output_pair = computed(function(): { key: (K1 | K0)?, value: V1? }
-		local k: K0 = peek(key) :: any
-		local v = value()
+		push_scope(scope)
+		local k = input_key
 
-		local result = { xpcall(mapper, debug.traceback, v, k) } :: { any }
+		local result = { xpcall(mapper, debug.traceback, value, k) } :: { any }
 		local success: boolean = result[1]
 
+		pop_scope()
+		
 		if success == true then
 			local output_value: V1? = result[2]
 			local output_key: (K1 | K0) = (result[3] :: K0) or k
-			return { key = output_key, value = output_value }
+
+			if typeof(output_value) == "Instance" and instance_cache == nil then
+				local instance: Instance = output_value :: any
+				instance_cache = { key = output_key, value = instance }
+				push_cleanup(scope, function() instance_cache = nil :: never end, instance)
+			end
+
+			return output_key, output_value
 		end
 
 		local error_message: string = result[2] :: any
-		error(`error while processing key {tostring(k)} and value {tostring(v)}:\n{error_message}`)
+		object.destroy()
+		error(error_message)
 
-		return { key = nil, value = nil }
-	end)
-
-	object.destroy = function() cleanup(output_pair); table.clear(object) end
-	object.get_output = function()
-		local result = output_pair()
-		return result.key, result.value
+		return nil, nil
 	end
 
 	return object :: any
 end
 
-local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, K0) -> (V1, K1?)): Molecule<{ [K1]: V1 }>
+local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (Molecule<V0>, K0) -> (V1, K1?)): Molecule<{ [K1]: V1 }>
 	local owner = get_scope()
 	local sub_owner = new_scope(owner)
 
@@ -89,10 +100,7 @@ local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, 
 
 		cleaned_up = true
 
-		for parent in next, node.parents do
-			parent.children[node] = nil
-			node.parents[parent] = nil
-		end
+		unparent(node)
 
 		table.clear(sub_objects)
 		destroy_scope(sub_owner)
@@ -114,17 +122,14 @@ local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, 
 		depend(sub_owner, node)
 		flush_captures(sub_owner)
 
-		local pending_pairs = {} :: { [K0]: V0 }
-		for key, value in input_data do
-			pending_pairs[key] = value
-		end
+		local pending_pairs = table.clone(input_data)
 
 		local new_sub_objects = {}
-		local updated_sub_objects = {} -- for batching
+		--local updated_sub_objects = {} -- for batching
 		
 		-- step 2: remove and update existing sub objects
 		for object in sub_objects do
-			local input_key = object.input_key()
+			local input_key = object.input_key
 			local new_input_value = pending_pairs[input_key]
 			
 			if new_input_value == nil then
@@ -133,23 +138,15 @@ local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, 
 			else
 				new_sub_objects[object] = true
 				pending_pairs[input_key] = nil
-				table.insert(updated_sub_objects, { object = object, value = new_input_value })
+				object.input_value(new_input_value)
+				--table.insert(updated_sub_objects, { object = object, value = new_input_value })
 			end
-		end
-
-		if #updated_sub_objects > 0 then
-			batch(function()
-				for _, record in updated_sub_objects do
-					local sub_object = record.object
-					sub_object.input_value(record.value)
-				end
-			end)
 		end
 	
 		-- step 3: create new sub objects
 		push_scope(sub_owner)
 		for key, value in pending_pairs do
-			local sub_object = create_sub_object(key, value, mapper)
+			local sub_object = create_sub_object(sub_owner, key, value, mapper)
 			new_sub_objects[sub_object] = true
 		end
 		pop_scope()
@@ -176,8 +173,9 @@ local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, 
 			output[output_key] = output_value
 
 			if typeof(output_key) == "number" then
-				min_array_index = math.min(min_array_index, output_key)
-				max_array_index = math.max(max_array_index, output_key)
+				local number: number = output_key :: any
+				min_array_index = math.min(min_array_index, number)
+				max_array_index = math.max(max_array_index, number)
 			end
 		end
 
@@ -197,6 +195,8 @@ local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, 
 				move_to += 1
 			end
 		end
+
+		return true
 	end)
 
 	node.cache = {}
@@ -213,12 +213,14 @@ local function mapped<K0, V0, K1, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, 
 				if scope.type == "cleanup" and not owner then
 					return push_cleanup(scope, destroy, node) :: never
 				end
-
-				push_child_to_scope(scope, node)
 			end
 
 			if not cleaned_up then
 				evaluate(node)
+			end
+
+			if scope then
+				push_child_to_scope(scope, node)
 			end
 
 			return node.cache :: { [K1]: V1 }

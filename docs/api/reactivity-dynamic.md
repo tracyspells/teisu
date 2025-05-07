@@ -16,13 +16,13 @@ type MapMolecule<K, V> = Molecule<Map<K, V>>
 
 function mapped<K0, K1, V0, V1>(
     state: Derivable<Map<K0, V0>>, 
-    mapper: (V0, K0) -> (V1?, K1?)
+    mapper: (Molecule<V0>, K0) -> (V1?, K1?)
 ): MapMolecule<K1, V1>
 ```
 
 ### Parameters
 
--   `state`: A molecule that returns a dictionary or an array that you want to map over.
+-   `state`: A [derivable](../tutorials/fundamentals/derivable) that represents a dictionary or an array that you want to map over.
 
 -   `mapper`: A function that is called for each key and value in your `state`. The mapper can return a value and a key. If the mapper function doesn't return a key, the original key will be used.
 
@@ -38,18 +38,28 @@ function mapped<K0, K1, V0, V1>(
 type Todo = { id: number, value: string }
 
 local todosFlec: Flec<{ Todo }> = flec({})
-local todosById = mapped(todosAtom, function(todo, index)
+local todosById = mapped(todosAtom, function(value, _index)
+    local todo = value()
 	return todo.value, todo.id
 end)
 ```
 
 ```luau [Example B]
 local test = flec({ 1, 2, 3 })
-local result = mapped(test, function(number) 
-   return number * 2
+local double = mapped(test, function(number) 
+   return number() * 2
 end)
 
-print(result()) --> { 2, 4, 6 }
+print(double()) --> { 2, 4, 6 }
+```
+
+```luau [Example C]
+local source = { "i'm the strongest there is!" }
+local all_uppercase = mapped(source, function(value) 
+   return string.upper(value())
+end)
+
+print(all_uppercase()) --> { "I'M THE STRONGEST THERE IS!" }
 ```
 :::
 
