@@ -168,14 +168,13 @@ local function step_tweens(dt: number)
 end
 
 local function update_tween_sources()
-	local results: { [Node<unknown>]: any } = {}
-	local source_node_updates = 0
-
+	local results: { Node<unknown> } = {}
+	
 	for tween, output in tweens do
 		local result = convert[tween.goalType].pack(tween.pos)
 
-		results[output] = result
-		source_node_updates += 1
+		output.cache = result
+		table.insert(results, output)
 
 		if tween.completed then
 			if tween.onCompleteListeners.n > 0 then
@@ -193,7 +192,7 @@ local function update_tween_sources()
 		end
 	end
 
-	return results, source_node_updates
+	return results
 end
 
 local function step()

@@ -95,14 +95,13 @@ local function step_springs(dt: number)
 end
 
 local function update_spring_sources()
-	local results: { [Node<unknown>]: any } = {}
-	local source_node_updates = 0
-
+	local results: { Node<unknown> } = {}
+	
 	for spring, output in springs do
 		local result = convert[spring.goalType].pack(spring.pos)
-
-		results[output] = result
-		source_node_updates += 1
+		
+		output.cache = result
+		table.insert(results, output)
 
 		if spring.completed then
 			if spring.onCompleteListeners.n > 0 then
@@ -116,7 +115,7 @@ local function update_spring_sources()
 		end
 	end
 
-	return results, source_node_updates
+	return results
 end
 
 local function step()
