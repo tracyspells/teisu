@@ -1,12 +1,12 @@
 local typeof = game and typeof or require("@mock/").typeof
 local task = game and task or require("@mock/").task
-
 local types = require("@types/")
 local graph = require("@graph/")
 local convert = require("@convert/")
 local easing_styles = require("@easing_styles/")
 local peek = require("@peek/")
 local effect = require("@effect/")
+local computed = require("@computed/")
 
 type Molecule<T> = types.Molecule<T>
 type UsedAs<T> = types.UsedAs<T>
@@ -87,6 +87,21 @@ local function get_tween_props(props: TweenProps?): TweenProps
 	end
 
 	return props
+end
+
+local function are_props_equal(old: TweenProps, new: TweenProps): boolean
+	if 
+		old.delay ~= new.delay 
+		or old.direction ~= new.direction
+		or old.duration ~= new.duration
+		or old.repeats ~= new.repeats
+		or old.reverses ~= new.reverses
+		or old.style ~= new.style
+	then
+		return false
+	end
+
+	return true
 end
 
 local function is_NaN(value: number)
@@ -305,25 +320,33 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 		push_cleanup(owner, cleanup, self)
 	end
 
-	dispose = effect(function()
-		local changes = 0
-
+	local properties = computed(function(): typeof(DEFAULT_TWEEN_PROPS)
 		local duration = peek(tween_props.duration, true) :: number
 		local style = peek(tween_props.style, true)
 		local direction: EasingDirection = peek(tween_props.direction, true)
-		local delay = peek(tween_props.delay, true)
+		local delay = math.max(peek(tween_props.delay, true), 0)
 		local reverses = peek(tween_props.reverses, true)
-		
-		local repeats = peek(tween_props.repeats, true)
-		repeats = math.max(repeats, -1) + 1
-		
+		local repeats = math.max(peek(tween_props.repeats, true), -1) + 1
+
+		return { 
+			duration = duration, style = style, 
+			direction = direction,
+			delay = delay, reverses = reverses, repeats = repeats 
+		}
+	end, function(old, new) return if old ~= new then false else are_props_equal(old, new) end)
+
+	dispose = effect(function()
+		local changes = 0
+		local p = properties()
+		local delay, duration, style, direction, reverses, repeats = p.delay, p.duration, p.style, p.direction, p.reverses, p.repeats
+
 		local goal = source()
 		local goal_type = typeof(goal)
 
 		updates += 1
 
 		if state.delay ~= delay then
-			state.delay = math.max(delay, 0)
+			state.delay = delay
 			changes += 1
 		end
 
@@ -344,13 +367,13 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 		local did_style_or_direction_change = false
 		if state.style ~= style and easing_styles[style] then
-			state.style = style
+			state.style = style :: EasingStyle
 			changes += 1
 			did_style_or_direction_change = true
 		end
 
 		if state.direction ~= direction and is_valid_direction(direction) then
-			state.direction = direction
+			state.direction = direction :: EasingDirection
 			changes += 1
 			did_style_or_direction_change = true
 		end

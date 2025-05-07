@@ -1,11 +1,11 @@
 local typeof = game and typeof or require("@mock/").typeof
 local task = game and task or require("@mock/").task
-
 local types = require("@types/")
 local graph = require("@graph/")
 local convert = require("@convert/")
 local peek = require("@peek/")
 local effect = require("@effect/")
+local computed = require("@computed/")
 
 type Molecule<T> = types.Molecule<T>
 type UsedAs<T> = types.UsedAs<T>
@@ -279,11 +279,23 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		push_cleanup(owner, cleanup, self)
 	end
 
-	dispose = effect(function()
-		local goal, _speed, _damping = source(), peek(speed or 1, true), peek(damping or 1, true)
-		local changes = 0
+	local properties = computed(function(): { speed: number, damping: number }
+		local s, d = peek(speed or 1, true), peek(damping or 1, true)
 
+		return { speed = s, damping = d }
+	end, function(old, new) 
+		if old ~= new then
+			return false
+		end
+
+		return old.speed == new.speed and old.damping == new.damping 
+	end)
+
+	dispose = effect(function()
+		local goal, p = source(), properties()
 		local goal_type = typeof(goal)
+		local _speed, _damping = p.speed, p.damping
+		local changes = 0
 
 		updates += 1
 
