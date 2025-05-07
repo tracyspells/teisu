@@ -16,7 +16,7 @@ local push_child_to_scope = graph.push_child_to_scope
 local destroy_scope = graph.destroy_scope
 local push_cleanup = graph.push_cleanup
 local flush_captures = graph.flush_captures
-local depend = graph.depend
+local depend, unparent = graph.depend, graph.unparent
 local try = graph.try
 
 local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boolean)?): Molecule<T>
@@ -30,10 +30,7 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 		if not cleaned_up then
 			cleaned_up = true
 
-			for parent in next, node.parents do
-				parent.children[node] = nil
-				node.parents[parent] = nil
-			end
+			unparent(node)
 
 			if inner_scope then
 				destroy_scope(inner_scope)
@@ -62,9 +59,13 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 		depend(scope, node)
 		flush_captures(scope)
 
-		if new ~= old and not (equals ~= nil and equals(old, new)) then
+		local not_the_same = if new ~= old and not (equals ~= nil and equals(old, new)) then true else false
+
+		if not_the_same then
 			node.cache = new
 		end
+
+		return not_the_same
 	end)
 	node.cache = nil :: never
 
@@ -75,19 +76,21 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 	return function(...: any)
 		if select("#", ...) == 0 then
 			local scope = get_scope()
-			
+
 			if scope then
 				if scope.type == "cleanup" and not owner then
 					return push_cleanup(scope, destroy, node) :: never
 				end
-
-				push_child_to_scope(scope, node)
 			end
 
 			if not cleaned_up then
 				evaluate(node)
 			end
 
+			if scope then
+				push_child_to_scope(scope, node)
+			end
+			
 			return node.cache :: T
 		end
 

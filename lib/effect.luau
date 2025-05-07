@@ -12,7 +12,7 @@ local push_scope = graph.push_scope
 local pop_scope = graph.pop_scope
 local push_cleanup = graph.push_cleanup
 local destroy_scope = graph.destroy_scope
-local depend = graph.depend
+local depend, unparent = graph.depend, graph.unparent
 local flush_captures = graph.flush_captures
 local try = graph.try
 
@@ -27,10 +27,7 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 		if not disconnected then
 			disconnected = true
 
-			for parent in next, node.parents do
-				parent.children[node] = nil
-				node.parents[parent] = nil
-			end
+			unparent(node)
 			
 			if inner_scope ~= nil then
 				destroy_scope(inner_scope)
@@ -43,7 +40,7 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 
 	node = createNode(function()
 		if disconnected then
-			return
+			return false
 		end
 
 		if inner_scope ~= nil then
@@ -76,6 +73,8 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 			depend(scope, node)
 			flush_captures(scope)
 		end
+
+		return true
 	end)
 
 	if owner then

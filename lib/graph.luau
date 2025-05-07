@@ -11,7 +11,7 @@ type Node<T> = types.Node<T>
 type NodeState = types.NodeState
 type NodeNonCleanState = types.NodeNonCleanState
 
-type Task = (Instance | types.Animated<any> | types.Destroyable | types.Disconnectable | thread)
+type Task = types.Task
 
 export type Scope = {
 	cleanups: { Task | Cleanup } | false, -- { object, cleanup_function }
@@ -21,7 +21,7 @@ export type Scope = {
 	type: ("cleanup")?,
 }
 
-local batched: Set<Node<any>> = {}
+local batched: { [Node<any>]: boolean } = {}
 local capturing = { n = 0 } :: { [number]: Scope, n: number }
 
 local NODE_KEY = newproxy()
@@ -162,7 +162,7 @@ local function createSourceNode<T>(initialState: T): Node<T>
 	}
 end
 
-local function createDerivedNode<T>(effect: () -> ()): Node<T>
+local function createDerivedNode<T>(effect: () -> boolean): Node<T>
 	return {
 		parents = {},
 		children = {},
@@ -174,7 +174,7 @@ local function createDerivedNode<T>(effect: () -> ()): Node<T>
 	}
 end
 
-local function createEagerNode<T>(effect: (...any) -> ()): Node<T>
+local function createEagerNode<T>(effect: (...any) -> boolean): Node<T>
 	return {
 		parents = {},
 		children = table.freeze {},
@@ -207,6 +207,13 @@ local function depend<T>(scope: Scope, node: Node<T>)
 	end
 end
 
+local function unparent<T>(node: Node<T>)
+	for parent in node.parents do
+		parent.children[node] = nil
+		node.parents[parent] = nil
+	end
+end
+
 local function castToNode<T>(target: T): Node<T>?
 	if typeof(target) ~= "table" or target.cache == nil then
 		return nil
@@ -221,16 +228,6 @@ local function castToReactable<T>(target: T): Node<T>?
 	end
 
 	return castToNode((target :: (...any) -> Node<T>)(NODE_KEY)) :: any
-end
-
-local function isSourceNode(value: any): (boolean, Node<any>?)
-	local node = castToReactable(value)
-
-	if node == nil then
-		return false, nil
-	end
-
-	return node.eager == nil and node.effect == false, node
 end
 
 local function try<T..., U...>(
@@ -296,25 +293,23 @@ local function try<T..., U...>(
 end
 
 local function update<T>(node: Node<T>)
-	-- sever ties with this node's parents
-	for parent in next, node.parents do
-		parent.children[node] = nil
-		node.parents[parent] = nil
-	end
-
-	local effect = node.effect :: (() -> ()) | false
+	unparent(node)
+	
+	local effect = node.effect :: (() -> boolean) | false
 	if type(effect) == "function" then
-		effect()
-	end
+		local meaningfully_changed = effect()
 
-	for child in next, node.children do
-		child.state = "dirty"
+		if node.eager == nil and meaningfully_changed == true then
+			for child in node.children do
+				child.state = "dirty"
+			end
+		end
 	end
 end
 
 local function updateIfNecessary<T>(node: Node<T>)
 	if node.state == "check" then
-		for parent in next, node.parents do
+		for parent in node.parents do
 			updateIfNecessary(parent)
 
 			local currentState: NodeNonCleanState = node.state
@@ -333,12 +328,11 @@ local function updateIfNecessary<T>(node: Node<T>)
 end
 
 local function updateDescendants(sourceNode: Node<any>)
-	if flags.batching then
-		if not sourceNode.isPartOfBatch then
-			batched[sourceNode] = true
-			sourceNode.isPartOfBatch = true
-		end
+	if sourceNode.isPartOfBatch == true then
+		sourceNode.isPartOfBatch = false
+	end
 
+	if flags.batching == true and sourceNode.isPartOfBatch == true then
 		return
 	end
 
@@ -349,7 +343,7 @@ local function updateDescendants(sourceNode: Node<any>)
 	local queue: Array<Set<Node<any>>> = { sourceNode.children }
 
 	local eagerNodes: Array<Node<any>> = {}
-	local eagerNodesSeen: Map<Node<any>, number> = {}
+	local eagerNodesSeen: Set<Node<any>> = {}
 
 	repeat
 		local children = table.remove(queue, 1) :: Set<Node<any>>
@@ -358,12 +352,12 @@ local function updateDescendants(sourceNode: Node<any>)
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager == true
 			local isEmpty = next(child.children) == nil
-
-			child.state = if isDirectChild then "dirty" else "check"
+			
+			child.state = if isChildEager or isDirectChild then "dirty" else "check"
 
 			if isChildEager and eagerNodesSeen[child] == nil then
 				table.insert(eagerNodes, child)
-				eagerNodesSeen[child] = child.createdAt
+				eagerNodesSeen[child] = true
 			end
 
 			if not isEmpty then
@@ -372,8 +366,20 @@ local function updateDescendants(sourceNode: Node<any>)
 		end
 	until #queue <= 0 or children == nil
 
-	for _, node in next, eagerNodes do
-		updateIfNecessary(node)
+	if #eagerNodes <= 0 then return end
+
+	if flags.batching == true and sourceNode.isPartOfBatch == false then
+		sourceNode.isPartOfBatch = true
+	end
+
+	for _, node in eagerNodes do
+		if flags.batching == true then
+			if batched[node] == nil then
+				batched[node] = true
+			end
+		else
+			updateIfNecessary(node)
+		end
 	end
 end
 
@@ -394,12 +400,12 @@ return table.freeze {
 	flush_captures = flush_captures,
 
 	createSourceNode = createSourceNode,
-	isSourceNode = isSourceNode,
 	createDerivedNode = createDerivedNode,
 	createEagerNode = createEagerNode,
 	evaluate = updateIfNecessary,
 	castToReactable = castToReactable,
 	updateDescendants = updateDescendants,
 	establishBonds = establishBonds,
-	depend = depend
+	depend = depend,
+	unparent = unparent,
 }
