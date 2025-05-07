@@ -3,27 +3,25 @@ local graph = require("@graph/")
 
 type Flec<T> = types.Flec<T>
 type Transformer<T> = (old: T) -> T
-
-type EqualityFn<T> = (old: T, new: T) -> boolean
+type EqualityFn<T> = types.EqualityFn<T>
 
 local createNode = graph.createSourceNode
 local updateDescendants = graph.updateDescendants
-local capturing = graph.capturing
+local get_scope = graph.get_scope
+local push_child_to_scope = graph.push_child_to_scope
 
 local function flec<T>(initial_value: T, equals: EqualityFn<T>?): Flec<T>
 	local node = createNode(initial_value)
 
 	return function(...: any)
 		if select("#", ...) == 0 then
-			if capturing.n > 0 then
-				local scope = capturing[capturing.n]
+			local scope = get_scope()
 
-				if scope.type == nil then
-					scope[node] = true
-				end
+			if scope then
+				push_child_to_scope(scope, node)
 			end
 
-			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+			return node.cache:: T
 		end
 
 		local target = ...
@@ -32,7 +30,7 @@ local function flec<T>(initial_value: T, equals: EqualityFn<T>?): Flec<T>
 			return node :: any
 		end
 
-		local old = node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+		local old = node.cache :: T
 		local new: T
 
 		if typeof(target) == "function" then
@@ -43,12 +41,12 @@ local function flec<T>(initial_value: T, equals: EqualityFn<T>?): Flec<T>
 		end
 
 		if new ~= old and not (equals ~= nil and equals(old, new)) then
-			node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new
+			node.cache = new
 
 			updateDescendants(node)
 		end
 
-		return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+		return node.cache :: T
 	end
 end
 

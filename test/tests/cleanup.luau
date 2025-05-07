@@ -41,10 +41,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
             end)
         end)
 
-        CHECK(#results == 0)
         CHECK(equals(results, {}))
         unroot()
-        CHECK(#results == 3)
         CHECK(equals(results, { 5, true, "hi" } :: { string | boolean | number }))
     end
 

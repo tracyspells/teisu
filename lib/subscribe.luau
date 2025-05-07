@@ -12,32 +12,16 @@ local NONE = patch.NONE
 local is_none = patch.is_none
 
 return function<T>(molecule: Molecule<T>, listener: Listener<T>): Cleanup
-	local old: T | NONE = NONE :: any
-	local disconnected = false
-
-	local dispose = effect(function(_, on_change)
+	return effect(function(_, old)
 		local new = molecule()
-
-		on_change(function()
-			if disconnected then
-				return
-			end
-			old = new
-		end)
-
-		if (not is_none(old) and not is_none(new)) and new ~= old then
+	
+		if not is_none(old) and old ~= new then
 			peek(function()
-				listener(new, old :: T)
+				listener(new, old)
 				return nil
 			end)
 		end
-	end)
 
-	return function()
-		if disconnected then
-			return
-		end
-		disconnected, old = true, nil :: never
-		dispose()
-	end
+		return new
+	end, NONE :: any)
 end

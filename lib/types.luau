@@ -20,7 +20,7 @@ export type Node<T> = {
 	parents: Set<Node<T>>,
 	state: NodeState,
 	createdAt: number,
-	___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value: T | false,
+	cache: T | false,
 	eager: boolean?,
 	isPartOfBatch: boolean?,
 	nickname: string,
@@ -28,7 +28,7 @@ export type Node<T> = {
 }
 
 export type Molecule<T> = () -> T
-export type Flec<T> = (() -> T) & ((value: T | ((T) -> T)) -> T)
+export type Flec<T> = (() -> T) & ((value: T) -> T) & ((value: (T) -> T) -> T)
 
 export type Spring<T> = Molecule<T> & {
 	impulse: (self: Spring<T>, delta: T) -> (),
@@ -66,5 +66,19 @@ export type SyncPayload = {
 	type: "patch",
 	data: { Patch<string | number, any> },
 }
+
+export type EqualityFn<T> = (old: T, new: T) -> boolean
+
+export type Animated<T> = Spring<T> | Tween<T>
+export type Destroyable = { destroy: (any) -> () } | { Destroy: (any) -> () }
+export type Disconnectable = { disconnect: (any) -> () } | { Disconnect: (any) -> () }
+
+export type Task = 
+	Instance 
+	| () -> () 
+	| Animated<any> 
+	| Destroyable 
+	| Disconnectable 
+	| RBXScriptConnection
 
 return nil

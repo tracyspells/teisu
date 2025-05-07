@@ -48,12 +48,11 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
     do
         CASE("root() cleanup test")
+        local input = flec(true)
         local one = function() return 1 end
 
-		local input = flec(true)
-
         local is_root_scope_cleaned_up = false
-        local unroot, output = root(function()  
+        local destroy, output = root(function()  
             cleanup(function() is_root_scope_cleaned_up = true end)
 
             return show(input, one)
@@ -61,9 +60,16 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         
         CHECK(is_root_scope_cleaned_up == false)
+
         output() -- create a root scope internally
-        unroot() -- everything should be cleaned up at this point
+
+        CHECK(output() == 1)
+        input(false)
+        CHECK(output() == nil)
+
+        destroy() -- everything should be cleaned up at this point
         CHECK(is_root_scope_cleaned_up == true)
+        CHECK(output() == nil)
     end
 
     do
@@ -85,8 +91,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
         
 		cleanup(output)
         source(false)
-        
-        CHECK(output() == nil)
+
+        CHECK(output() == 1)
 
         if source_node then
             CHECK(equals(source_node.children, {}))
@@ -120,6 +126,6 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
         CHECK(output() == input)
         cleanup(output)
-        CHECK(output() == nil)
+        CHECK(output() == input)
     end
 end

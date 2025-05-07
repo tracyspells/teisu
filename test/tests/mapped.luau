@@ -29,11 +29,12 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local items = flec({ "a", "b", "c" })
 		local allUpperCase = mapped(items, function(item)
-			return string.upper(item)
+			return string.upper(item())
 		end)
-
+		
+		local uppercase_result = allUpperCase()
 		for index = 1, 3 do
-			local uppercase = peek(allUpperCase)[index]
+			local uppercase = uppercase_result[index]
 			local item = items()[index]
 
 			CHECK(uppercase == string.upper(item))
@@ -70,7 +71,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local items = flec({ { key = 1 }, { key = 2 }, { key = 3 } })
 		local map = mapped(items, function(item)
-			return item, item.key
+			local value = item()
+			return value, value.key
 		end)
 
 		for key = 1, 3 do
@@ -79,24 +81,16 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		end
 
 		local previous = map()
-
-		items(function(old)
-			local new = table.clone(old)
-			new[2] = new[3]
-			new[3] = nil
-
-			return new
-		end)
+		items({ items()[1], items()[3] })
 
 		local new = map()
 		local current = items()
-		
+
 		CHECK(new[1] == previous[1])
 		CHECK(new[1] == current[1])
-		CHECK(new[2] ~= previous[2]) -- checks if new[2] is nil
-		CHECK(new[2] ~= current[2]) -- similar to above comment
+		CHECK(new[2] == nil) 
 		CHECK(new[3] == previous[3])
-		CHECK(new[3] ~= current[3]) -- similar to first comment
+		CHECK(new[3] ==  current[2])
 	end
 
 	do
@@ -112,7 +106,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		})
 
 		local map = mapped(items, function(item)
-			return item, item.key
+			local value = item()
+			return value, value.key
 		end)
 
 		local stopObserving = observe(map, function(item, key)
@@ -121,7 +116,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 			
 			return function()
 				if cleaning_up then return end
-	
+
 				CHECK(map()[key] == nil)
 				deleted += 1
 			end
@@ -130,11 +125,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		CHECK(added == 3)
 		CHECK(deleted == 0)
 
-		items(function(old)
-			local new = table.clone(old)
-			new[2] = nil
-			return new
-		end)
+		items({ items()[1], items()[3] })
 
 		CHECK(added == 3)
 		CHECK(deleted == 1)
@@ -151,8 +142,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		local node = castToNode(source)
 
 		local unroot, output = root(function()
-			return mapped(source, function(...)
-				return ...
+			return mapped(source, function(value)
+				return value()
 			end)
 		end)
 
@@ -168,16 +159,18 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local source = flec({ 1, 2, 3 })
 
-		local function text_label(text: string)
+		local function text_label(text: () -> number)
 			return new "TextLabel" {
-				Text = text,
+				Text = function() 
+					return `{text()}` 
+				end,
 			}
 		end
 
 		local unroot, result = root(function()  
 			local list
 			local map = mapped(source, function(number)
-				return text_label(`{number}`)
+				return text_label(number)
 			end)
 
 			effect(function()
@@ -203,11 +196,15 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 			return new
 		end)
 
-		for index = 1, 2 do
+		for index = 1, 3 do
 			local entry: TextLabel? = result[index] :: any
 
-			CHECK(entry ~= nil)
-			CHECK((entry :: TextLabel).Text == `{index}`)
+			if index == 3 then
+				CHECK(entry == nil)
+			else
+				CHECK(entry ~= nil)
+				CHECK((entry :: TextLabel).Text == `{index}`)
+			end
 		end
 
 		unroot()
@@ -218,7 +215,7 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local data = {foo = "oof", bar = "rab"}
 		local map = mapped(data, function(value)
-			return value :: any .. "baz"
+			return value() :: any .. "baz"
 		end)
 
 		CHECK(typeof(map()) == "table")

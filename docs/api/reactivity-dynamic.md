@@ -14,35 +14,90 @@ type Derivable<T> = (Molecule<T>) | T
 
 type MapMolecule<K, V> = Molecule<Map<K, V>>
 
-function mapped<K0, V0, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> V1?): MapMolecule<K0, V1>
-function mapped<K0, V0, K1, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> (V1?, K1?)): MapMolecule<K1, V1>
-function mapped<K0, V0, K1, V1>(state: Derivable<Map<K0, V0>>, mapper: (V0, K0) -> (V1?, K1)): MapMolecule<K1, V1>
+function mapped<K0, K1, V0, V1>(
+    state: Derivable<Map<K0, V0>>, 
+    mapper: (Molecule<V0>, K0) -> (V1?, K1?)
+): MapMolecule<K1, V1>
 ```
 
 ### Parameters
 
--   `state`: A molecule that returns a dictionary or an array that you want to map over.
+-   `state`: A [derivable](../tutorials/fundamentals/derivable) that represents a dictionary or an array that you want to map over.
 
--   `mapper`: A function that is called for each key and value in your `state`. For each key and value, this function will return a new value and key:
-
-    1. Return a single value to map your `state`'s original key to a new value.
-    2. Return two values, the first being the value and the second the key, to update both keys and values in your `state`.
-    3. Return `nil` for the value to remove the key from the resulting `state`.
+-   `mapper`: A function that is called for each key and value in your `state`. The mapper can return a value and a key. If the mapper function doesn't return a key, the original key will be used.
 
 
 ### Returns
 
 `mapped` returns a read-only flec.
 
-**Example:**
-```luau
+**Examples:**
+
+::: code-group
+```luau [Example A]
 type Todo = { id: number, value: string }
 
 local todosFlec: Flec<{ Todo }> = flec({})
-local todosById = mapped(todosAtom, function(todo, index)
+local todosById = mapped(todosAtom, function(value, _index)
+    local todo = value()
 	return todo.value, todo.id
 end)
 ```
+
+```luau [Example B]
+local test = flec({ 1, 2, 3 })
+local double = mapped(test, function(number, index) 
+   return number() * 2, index
+end)
+
+print(double()) --> { 2, 4, 6 }
+```
+
+```luau [Example C]
+local source = { "i'm the strongest there is!" }
+local all_uppercase = mapped(source, function(value) 
+   return string.upper(value())
+end)
+
+print(all_uppercase()) --> { "I'M THE STRONGEST THERE IS!" }
+```
+
+```luau [Example D]
+local new = Teisu.new
+local computed = Teisu.computed
+local mount = Teisu.mount
+
+local function text(result: () -> string)
+    return new "TextLabel" {
+        AnchorPoint = Vector2.one * 0.5,
+        Size = UDim2.fromScale(1, 0),
+        BackgroundTransparency = 1,
+        Text = computed(function()
+            return `{result()}`
+        end)
+    }
+end
+
+mount(function()
+    local usernames = { "OnlyTwentyCharacters", "tracyspells" }
+    local text_labels = mapped(usernames, function(value) 
+        return text(value)
+    end)
+
+    return new "ScreenGui" {
+        Name = "usernames",
+
+        new "Frame" {
+            AnchorPoint = Vector2.one * 0.5,
+            Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.fromOffset(300, 300),
+            text_labels
+        }
+    }
+end, Players.LocalPlayer.PlayerGui)
+```
+:::
+
 
 ## show()
 
@@ -69,7 +124,7 @@ function show<T, U>(input: Derivable<unknown>, component: () -> T, fallback: () 
 
 1. If the result from `input` is set to `nil`, the output of `show` is `nil`.
 2. If the result from `input` is set to `true`, `show` will return the result from `component`.
-2. If `fallback` is enabled and the result from `input` is set to `false`, `show` will return the result from `fallback`.
+3. If `fallback` is enabled and the result from `input` is set to `false`, `show` will return the result from `fallback`.
 
 **Example:**
 

@@ -11,12 +11,7 @@ type Node = types.Node<any>
 local evaluate = graph.evaluate
 local batched = graph.batched
 
-local function try<T...>(
-	callback: (T...) -> (),
-	on_error: () -> (),
-	on_success: () -> (),
-	...: T...
-)
+local function try<T...>(callback: (T...) -> (), on_error: () -> (), on_success: () -> (), ...: T...)
 	if flags.strict then
 		local thread = coroutine.create(callback, ...)
 		local ok, result: string? = coroutine.resume(thread)
@@ -67,70 +62,23 @@ return function(callback: () -> ())
 
 	local results
 	flags.batching = true
-	try(
-		callback,
-		function()
-			flags.batching = false
-			table.clear(batched)  
-		end,
+	try(callback, function()
+		flags.batching = false
+		table.clear(batched)
+	end, function()
+		flags.batching = false
 
-		function()
-			flags.batching = false
+		if next(batched) ~= nil then
 			results = table.clone(batched)
 			table.clear(batched)
 		end
-	)
+	end)
 
-	if not results then
+	if results == nil then
 		return
 	end
 
-	local queue: Array<{ sourceNode: Node, children: Set<Node> }> = {}
-
-	local eagerNodes: Array<Node> = {}
-	local eagerNodesSeen: Map<Node, number> = {}
-
-	-- this is pretty much a repeat of `graph.updateDescendants`, but on
-	-- a much larger scale
-
-	for node in next, results do
-		local isSourceNode = node.eager == nil and node.effect == false
-
-		if not isSourceNode then
-			continue
-		end
-
-		node.isPartOfBatch = nil
-
-		table.insert(queue, { sourceNode = node, children = node.children })
-	end
-
-	repeat
-		local entry = table.remove(queue, 1) :: { sourceNode: Node, children: Set<Node> }?
-
-		if entry then
-			local source_node = entry.sourceNode
-
-			for child in next, entry.children do
-				local isDirectChild = child.parents[source_node] == true
-				local isChildEager = child.eager ~= nil and true or false
-				local isEmpty = next(child.children) == nil
-
-				child.state = if isDirectChild then "dirty" else "check"
-
-				if isChildEager and eagerNodesSeen[child] == nil then
-					table.insert(eagerNodes, child)
-					eagerNodesSeen[child] = child.createdAt
-				end
-
-				if not isEmpty then
-					table.insert(queue, { sourceNode = source_node, children = child.children })
-				end
-			end
-		end
-	until #queue <= 0 or entry == nil
-
-	for _, node in eagerNodes do
-		evaluate(node)
+	for eager_node in results do
+		evaluate(eager_node)
 	end
 end

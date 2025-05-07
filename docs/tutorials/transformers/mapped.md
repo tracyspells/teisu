@@ -11,8 +11,8 @@ local mapped = Teisu.mapped
 
 local todos = flec({ "go shopping", "eat food", "head back home"})
 
-local uppercase = mapped(todos, function(value, index)
-    return string.upper(value)
+local uppercase = mapped(todos, function(value)
+    return string.upper(value())
 end)
 ```
 

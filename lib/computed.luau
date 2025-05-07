@@ -8,49 +8,78 @@ type Node<T> = types.Node<T>
 
 local evaluate = graph.evaluate
 local createNode = graph.createDerivedNode
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
-local capturing = graph.capturing
+local get_scope = graph.get_scope
+local new_scope = graph.new_scope
+local push_scope = graph.push_scope
+local pop_scope = graph.pop_scope
+local push_child_to_scope = graph.push_child_to_scope
+local destroy_scope = graph.destroy_scope
+local push_cleanup = graph.push_cleanup
+local flush_captures = graph.flush_captures
+local depend, unparent = graph.depend, graph.unparent
+local try = graph.try
 
 local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boolean)?): Molecule<T>
 	local node: Node<T>
-	local cleaned_up, is_under_root_scope = false, false
-	local owner = get_root_scope()
+	local cleaned_up = false
+
+	local owner = get_scope()
+	local inner_scope: graph.Scope?
 
 	local function destroy()
 		if not cleaned_up then
 			cleaned_up = true
 
-			for parent in next, node.parents do
-				parent.children[node] = nil
-				node.parents[parent] = nil
+			unparent(node)
+
+			if inner_scope then
+				destroy_scope(inner_scope)
+				inner_scope = nil
 			end
 		end
 	end
 
 	node = createNode(function()
-		local old = node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
-		local new = callback()
-
-		if old ~= new and not (equals ~= nil and equals(old, new)) then
-			node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new
+		if inner_scope then
+			destroy_scope(inner_scope)
+			inner_scope = nil
 		end
+
+		local old = node.cache :: T
+
+		local scope = new_scope(owner)
+		push_scope(scope)
+		local new = try(
+			callback, 
+			function() pop_scope() end,
+			function() destroy_scope(scope) end
+		)
+		
+		inner_scope = scope
+		depend(scope, node)
+		flush_captures(scope)
+
+		local not_the_same = if new ~= old and not (equals ~= nil and equals(old, new)) then true else false
+
+		if not_the_same then
+			node.cache = new
+		end
+
+		return not_the_same
 	end)
+	node.cache = nil :: never
 
 	if owner then
-		is_under_root_scope = true
-		push_to_root_scope(owner, node, destroy)
+		push_cleanup(owner, destroy, node)
 	end
 
 	return function(...: any)
 		if select("#", ...) == 0 then
-			if capturing.n > 0 then
-				local scope = capturing[capturing.n]
+			local scope = get_scope()
 
-				if scope.type == nil then
-					scope[node] = true
-				elseif scope.type == "cleanup" and not is_under_root_scope then
-					table.insert(scope, destroy)
+			if scope then
+				if scope.type == "cleanup" and not owner then
+					return push_cleanup(scope, destroy, node) :: never
 				end
 			end
 
@@ -58,7 +87,11 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 				evaluate(node)
 			end
 
-			return node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+			if scope then
+				push_child_to_scope(scope, node)
+			end
+			
+			return node.cache :: T
 		end
 
 		local target = ...

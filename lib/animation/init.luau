@@ -3,7 +3,7 @@ local spring = require("@spring/")
 local tween = require("@tween/")
 local batch = require("@batch/")
 
-local batched = graph.batched
+local update_descendants = graph.updateDescendants
 local step_springs, update_spring_sources = spring.step()
 local step_tweens, update_tween_sources = tween.step()
 
@@ -49,23 +49,19 @@ local function step()
 			debug.profileend()
 		end
 
-		local tween_sources, tween_source_count = update_tween_sources()
-		local spring_sources, spring_source_count = update_spring_sources()
+		local tween_sources = update_tween_sources()
+		local spring_sources = update_spring_sources()
 
-		local total = tween_source_count + spring_source_count
+		local total = #tween_sources + #spring_sources
 
 		if total > 0 then
 			batch(function()
-				for source_node, new_value in next, tween_sources do
-					batched[source_node] = true
-					source_node.isPartOfBatch = true
-					source_node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new_value
+				for _, source_node in  tween_sources do
+					update_descendants(source_node)
 				end
 
-				for source_node, new_value in next, spring_sources do
-					batched[source_node] = true
-					source_node.isPartOfBatch = true
-					source_node.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = new_value
+				for _, source_node in spring_sources do
+					update_descendants(source_node)
 				end
 			end)
 		end

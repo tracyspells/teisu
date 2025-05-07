@@ -4,7 +4,9 @@ local tween = require("@tween/")
 local action = require("@action/")
 local graph = require("@graph/")
 local effect = require("@effect/")
+local subscribe = require("@subscribe/")
 local cleanup = require("@cleanup/")
+local peek = require("@peek/")
 
 type Map<K, V> = types.Map<K, V>
 type Array<T> = types.Array<T>
@@ -24,6 +26,8 @@ type Cache = {
 		(Instance) -> () -- action callbacks
 	>,
 
+	parent: unknown, -- what to parent the instance to after running actions
+
 	-- each nested layer occupies two indexes: 1. table ref 2. nested depth
 	-- e.g. { t1 = { t3 = {} }, t2 = {} } -> { t1, 1, t2, 1, t3, 2 }
 	nested_stack: { {} | number },
@@ -31,9 +35,8 @@ type Cache = {
 
 local is_spring, is_tween = spring.is_spring, tween.is_tween
 local is_action = action.is_action
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
-local evaluate = graph.evaluate
+local get_scope = graph.get_scope
+local push_cleanup = graph.push_cleanup
 
 local implicit_effects
 do
@@ -49,86 +52,82 @@ do
 		end)
 	end
 
-	local function children(instance: Instance, source: Molecule<Instance | { Instance }>, layer: number, owner: graph.RootScope?)
-		local node: Node<any>
-		
-		local disconnected = false
-		local new_children: Set<Instance>, prev_children: Set<Instance> = {}, {}
+	local function children(instance: Instance, source: Molecule<Instance | { Instance }>)
+		local owner = get_scope()
+		local new_parented: Set<Instance> = {}
+		local old_parented: Set<Instance> = {}
 
-		local function process_child(child: Instance | { Instance })
-			if type(child) == "userdata" then
-				if not new_children[child] then
-					new_children[child] = true
-				end
+		local new_connections: { [Molecule<Instance | { Instance }>]: () -> () } = {}
+		local old_connections: { [Molecule<Instance | { Instance }>]: () -> () } = {}
 
-				if not prev_children[child] then
-					child.Parent = instance
-				else
-					prev_children[child] = nil
+		local function update_children()
+			old_parented, new_parented = new_parented, old_parented
+			old_connections, new_connections = new_connections, old_connections
+
+			local function process_child(child: Instance | { Instance } | () -> Instance | { Instance })
+				if type(child) == "userdata" then
+					new_parented[child] = true
+
+					if old_parented[child] == nil then
+						child.Parent = instance -- if child wasn't already parented then parent it
+					else
+						old_parented[child] = nil -- remove child from cache if it was already in cache
+					end
+				elseif type(child) == "table" then
+					for _, c in next, child do
+						process_child(c)
+					end
+				elseif type(child) == "function" then
+					local value = peek(child)
+					if value ~= nil then
+						process_child(value)
+					end
+
+					local connection = old_connections[child]
+					if connection == nil then
+						connection = subscribe(child, update_children)
+					else
+						old_connections[child] = nil
+					end
+
+					new_connections[child] = connection
 				end
-			elseif type(child) == "table" then
-				for _, c in next, child do
-					process_child(c)
-				end
-			elseif type(child) == "function" then
-				children(instance, child, layer + 1, owner)
 			end
-		end
 
-		local function dispose()
-			if not disconnected then
-				disconnected = true
+			process_child(source)
 
-				for parent in next, node.parents do
-					parent.children[node] = nil
-					node.parents[parent] = nil
-				end
-
-				node = nil :: never
+			-- unparent any children that aren't present
+			for child in next, old_parented do
+				child.Parent = nil
 			end
+
+			table.clear(old_parented)
+
+			-- cleanup connections
+			for _, disconnect in next, old_connections do
+				disconnect()
+			end
+
+			table.clear(old_connections)
 		end
 
 		local function destroy()
-			for child in prev_children do
-				child.Parent = nil
-			end
-
-			table.clear(new_children)
-			table.clear(prev_children)
-			dispose()
-		end
-
-		node = graph.createEagerNode(function()
-			if disconnected then
-				return
-			end
-
-			process_child(source())
-
-			for child in prev_children do
-				child.Parent = nil
-			end
-
-			table.clear(prev_children)
-			prev_children, new_children = new_children, prev_children
-		end)
-
-		if not owner and layer == 0 then
-			owner = get_root_scope()
+			source = nil :: never
+			update_children()
 		end
 
 		if owner then
-			push_to_root_scope(owner, node, destroy)
+			push_cleanup(owner, destroy, destroy)
 		end
 
-		evaluate(node)
+		update_children() -- parent children initially
 	end
 
-	implicit_effects = table.freeze {
+	implicit_effects = table.freeze({
 		property = property,
 		parent = parent,
 		children = children,
-	}
+	})
 end
 
 local free_cache: Cache?
@@ -142,6 +141,7 @@ local function borrow_cache(): Cache
 
 	return {
 		events = {},
+		parent = nil,
 		actions = {},
 		nested_stack = {},
 	}
@@ -153,11 +153,12 @@ end
 
 local function process_properties(props: Map<unknown, unknown>, instance: Instance, cache: Cache, depth: number)
 	for key, value in props do
-		if key == "Parent" then
-			continue
-		end
-
 		if type(key) == "string" then
+			if key == "Parent" then
+				cache.parent = value
+				continue
+			end
+
 			if type(value) == "function" then
 				if typeof((instance :: any)[key]) == "RBXScriptSignal" then
 					table.insert(cache.events, key)
@@ -176,7 +177,7 @@ local function process_properties(props: Map<unknown, unknown>, instance: Instan
 			elseif is_action(value) then
 				table.insert(cache.actions, (value :: any)[1] :: (Instance) -> ())
 			elseif type(value) == "function" then
-				implicit_effects.children(instance, value :: Molecule<Instance | { Instance }>, 0)
+				implicit_effects.children(instance, value :: Molecule<Instance | { Instance }>)
 			elseif type(value) == "table" then
 				table.insert(cache.nested_stack, value :: {})
 				table.insert(cache.nested_stack, depth + 1)
@@ -189,8 +190,6 @@ return function<T>(instance: T & Instance, props: Map<unknown, unknown>?): T
 	if not props then
 		error(`attempt to call a constructor returned by new() with no properties.`)
 	end
-
-	local parent: unknown = props.Parent
 
 	local cache: Cache = borrow_cache()
 	local events, actions = cache.events, cache.actions
@@ -211,11 +210,12 @@ return function<T>(instance: T & Instance, props: Map<unknown, unknown>?): T
 		cleanup((instance :: any)[event_name]:Connect(listener) :: RBXScriptConnection)
 	end
 
-	for _, callback in next, actions do
+	for _, callback in actions do
 		callback(instance)
 	end
 
-	if parent then
+	local parent = cache.parent
+	if parent ~= nil then
 		if type(parent) == "function" then
 			implicit_effects.parent(instance, parent :: Molecule<Instance>)
 		else
@@ -223,6 +223,7 @@ return function<T>(instance: T & Instance, props: Map<unknown, unknown>?): T
 		end
 	end
 
+	cache.parent = nil
 	table.clear(events)
 	table.clear(actions)
 	table.clear(nested_stack)

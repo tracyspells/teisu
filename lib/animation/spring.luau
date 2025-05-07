@@ -1,11 +1,11 @@
 local typeof = game and typeof or require("@mock/").typeof
 local task = game and task or require("@mock/").task
-
 local types = require("@types/")
 local graph = require("@graph/")
 local convert = require("@convert/")
 local peek = require("@peek/")
 local effect = require("@effect/")
+local computed = require("@computed/")
 
 type Molecule<T> = types.Molecule<T>
 type UsedAs<T> = types.UsedAs<T>
@@ -31,9 +31,9 @@ type SpringState<T> = {
 }
 
 local createSourceNode = graph.createSourceNode
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
-local capturing = graph.capturing
+local get_scope = graph.get_scope
+local push_child_to_scope = graph.push_child_to_scope
+local push_cleanup = graph.push_cleanup
 
 -- maps spring data to its corresponding output node
 -- lifetime of spring data is tied to output node
@@ -60,7 +60,7 @@ local function is_NaN(value: number)
 end
 
 local function step_springs(dt: number)
-	for spring in next, springs do
+	for spring in springs do
 		if spring.completed then continue end
 		
 		local pos, vel, goal = spring.pos, spring.vel, spring.target_pos
@@ -95,14 +95,13 @@ local function step_springs(dt: number)
 end
 
 local function update_spring_sources()
-	local results: { [Node<unknown>]: any } = {}
-	local source_node_updates = 0
-
-	for spring, output in next, springs do
+	local results: { Node<unknown> } = {}
+	
+	for spring, output in springs do
 		local result = convert[spring.goalType].pack(spring.pos)
-
-		results[output] = result
-		source_node_updates += 1
+		
+		output.cache = result
+		table.insert(results, output)
 
 		if spring.completed then
 			if spring.onCompleteListeners.n > 0 then
@@ -116,7 +115,7 @@ local function update_spring_sources()
 		end
 	end
 
-	return results, source_node_updates
+	return results
 end
 
 local function step()
@@ -129,7 +128,7 @@ local function is_spring(value: any): boolean
 end
 
 local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: UsedAs<number>?): Spring<T>
-	local owner = get_root_scope()
+	local owner = get_scope()
 
 	local output = createSourceNode(nil :: T?)
 	output.nickname = "spring"
@@ -215,14 +214,15 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		end
 	end
 
-	local is_under_root_scope, cleaned_up = false, false
+	local cleaned_up = false
 	local updates = -1
 	local dispose
 	local cleanup = function()
 		if cleaned_up then
 			return
 		end
-		cleaned_up, is_under_root_scope = true, nil :: never
+
+		cleaned_up = true
 		updates = nil :: never
 
 		if springs[state] then
@@ -231,7 +231,7 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 
 		state = nil :: never
 
-		if dispose and not is_under_root_scope then
+		if dispose and not owner then
 			dispose()
 			dispose = nil :: never
 		end
@@ -249,17 +249,17 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 				end
 
 				if select("#", ...) == 0 then
-					if capturing.n > 0 then
-						local scope = capturing[capturing.n]
-
-						if scope.type == nil then
-							scope[output] = true
-						elseif scope.type == "cleanup" and not is_under_root_scope then
-							table.insert(scope, cleanup)
+					local scope = get_scope()
+			
+					if scope then
+						if scope.type == "cleanup" and not owner then
+							return push_cleanup(scope, cleanup, self)
 						end
+
+						push_child_to_scope(scope, output)
 					end
 
-					return output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+					return output.cache  :: T
 				end
 
 				local target = ...
@@ -276,15 +276,26 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 	self = table.freeze(self)
 
 	if owner then
-		push_to_root_scope(owner, self, cleanup)
-		is_under_root_scope = true
+		push_cleanup(owner, cleanup, self)
 	end
 
-	dispose = effect(function()
-		local goal, _speed, _damping = source(), peek(speed or 1, true), peek(damping or 1, true)
-		local changes = 0
+	local properties = computed(function(): { speed: number, damping: number }
+		local s, d = peek(speed or 1, true), peek(damping or 1, true)
 
+		return { speed = s, damping = d }
+	end, function(old, new) 
+		if old ~= new then
+			return false
+		end
+
+		return old.speed == new.speed and old.damping == new.damping 
+	end)
+
+	dispose = effect(function()
+		local goal, p = source(), properties()
 		local goal_type = typeof(goal)
+		local _speed, _damping = p.speed, p.damping
+		local changes = 0
 
 		updates += 1
 
@@ -347,7 +358,7 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 			state.k, state.c = k, c
 
 			if updates == 0 then
-				output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = state.goal
+				output.cache = state.goal
 				state.pos, state.vel = table.clone(state.target_pos), table.clone(state.target_pos)
 			elseif updates > 0 and old_value_count ~= state.value_count then
 				if old_value_count > state.value_count then

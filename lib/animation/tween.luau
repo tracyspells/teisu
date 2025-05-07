@@ -1,12 +1,12 @@
 local typeof = game and typeof or require("@mock/").typeof
 local task = game and task or require("@mock/").task
-
 local types = require("@types/")
 local graph = require("@graph/")
 local convert = require("@convert/")
 local easing_styles = require("@easing_styles/")
 local peek = require("@peek/")
 local effect = require("@effect/")
+local computed = require("@computed/")
 
 type Molecule<T> = types.Molecule<T>
 type UsedAs<T> = types.UsedAs<T>
@@ -56,9 +56,9 @@ type TweenProps = {
 }
 
 local createSourceNode = graph.createSourceNode
-local get_root_scope = graph.get_root_scope
-local push_to_root_scope = graph.push_to_root_scope
-local capturing = graph.capturing
+local get_scope = graph.get_scope
+local push_child_to_scope = graph.push_child_to_scope
+local push_cleanup = graph.push_cleanup
 
 -- maps tween data to its corresponding output node
 -- lifetime of tween data is tied to output node
@@ -89,6 +89,21 @@ local function get_tween_props(props: TweenProps?): TweenProps
 	return props
 end
 
+local function are_props_equal(old: TweenProps, new: TweenProps): boolean
+	if 
+		old.delay ~= new.delay 
+		or old.direction ~= new.direction
+		or old.duration ~= new.duration
+		or old.repeats ~= new.repeats
+		or old.reverses ~= new.reverses
+		or old.style ~= new.style
+	then
+		return false
+	end
+
+	return true
+end
+
 local function is_NaN(value: number)
 	if value ~= value then
 		return true
@@ -114,7 +129,7 @@ local function is_valid_direction(value: any): boolean
 end
 
 local function step_tweens(dt: number)
-	for tween in next, tweens do
+	for tween in tweens do
 		if tween.repeats ~= 0 and tween.repeat_count > tween.repeats and not tween.completed then
 			tween.completed = true
 		end
@@ -168,14 +183,13 @@ local function step_tweens(dt: number)
 end
 
 local function update_tween_sources()
-	local results: { [Node<unknown>]: any } = {}
-	local source_node_updates = 0
-
-	for tween, output in next, tweens do
+	local results: { Node<unknown> } = {}
+	
+	for tween, output in tweens do
 		local result = convert[tween.goalType].pack(tween.pos)
 
-		results[output] = result
-		source_node_updates += 1
+		output.cache = result
+		table.insert(results, output)
 
 		if tween.completed then
 			if tween.onCompleteListeners.n > 0 then
@@ -193,7 +207,7 @@ local function update_tween_sources()
 		end
 	end
 
-	return results, source_node_updates
+	return results
 end
 
 local function step()
@@ -208,7 +222,7 @@ end
 local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 	local tween_props = get_tween_props(props)
 
-	local owner = get_root_scope()
+	local owner = get_scope()
 
 	local output = createSourceNode(nil :: T?)
 	output.nickname = "tween"
@@ -241,14 +255,15 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 		end
 	end
 
-	local is_under_root_scope, cleaned_up = false, false
+	local cleaned_up = false
 	local updates = -1
 	local dispose
 	local cleanup = function()
 		if cleaned_up then
 			return
 		end
-		cleaned_up, is_under_root_scope = true, nil :: never
+
+		cleaned_up = true
 		updates = nil :: never
 
 		if tweens[state] then
@@ -257,7 +272,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 		state = nil :: never
 
-		if dispose and not is_under_root_scope then
+		if dispose and not owner then
 			dispose()
 			dispose = nil :: never
 		end
@@ -275,17 +290,17 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 				end
 
 				if select("#", ...) == 0 then
-					if capturing.n > 0 then
-						local scope = capturing[capturing.n]
-
-						if scope.type == nil then
-							scope[output] = true
-						elseif scope.type == "cleanup" and not is_under_root_scope then
-							table.insert(scope, cleanup)
+					local scope = get_scope()
+			
+					if scope then
+						if scope.type == "cleanup" and not owner then
+							return push_cleanup(scope, cleanup, self)
 						end
+
+						push_child_to_scope(scope, output)
 					end
 
-					return output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value :: T
+					return output.cache :: T
 				end
 
 				local target = ...
@@ -302,29 +317,36 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 	self = table.freeze(self)
 
 	if owner then
-		push_to_root_scope(owner, self, cleanup)
-		is_under_root_scope = true
+		push_cleanup(owner, cleanup, self)
 	end
 
-	dispose = effect(function()
-		local changes = 0
-
+	local properties = computed(function(): typeof(DEFAULT_TWEEN_PROPS)
 		local duration = peek(tween_props.duration, true) :: number
 		local style = peek(tween_props.style, true)
 		local direction: EasingDirection = peek(tween_props.direction, true)
-		local delay = peek(tween_props.delay, true)
+		local delay = math.max(peek(tween_props.delay, true), 0)
 		local reverses = peek(tween_props.reverses, true)
-		
-		local repeats = peek(tween_props.repeats, true)
-		repeats = math.max(repeats, -1) + 1
-		
+		local repeats = math.max(peek(tween_props.repeats, true), -1) + 1
+
+		return { 
+			duration = duration, style = style, 
+			direction = direction,
+			delay = delay, reverses = reverses, repeats = repeats 
+		}
+	end, function(old, new) return if old ~= new then false else are_props_equal(old, new) end)
+
+	dispose = effect(function()
+		local changes = 0
+		local p = properties()
+		local delay, duration, style, direction, reverses, repeats = p.delay, p.duration, p.style, p.direction, p.reverses, p.repeats
+
 		local goal = source()
 		local goal_type = typeof(goal)
 
 		updates += 1
 
 		if state.delay ~= delay then
-			state.delay = math.max(delay, 0)
+			state.delay = delay
 			changes += 1
 		end
 
@@ -345,13 +367,13 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 		local did_style_or_direction_change = false
 		if state.style ~= style and easing_styles[style] then
-			state.style = style
+			state.style = style :: EasingStyle
 			changes += 1
 			did_style_or_direction_change = true
 		end
 
 		if state.direction ~= direction and is_valid_direction(direction) then
-			state.direction = direction
+			state.direction = direction :: EasingDirection
 			changes += 1
 			did_style_or_direction_change = true
 		end
@@ -399,7 +421,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 			state.target_pos = data
 
 			if updates == 0 then
-				output.___DO_NOT_TOUCH_OR_YOU_WILL_GET_FIRED_usedAs_value = state.goal
+				output.cache = state.goal
 				
 				state.pos = table.create(state.value_count, 0)
 			end

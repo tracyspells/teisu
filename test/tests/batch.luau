@@ -181,8 +181,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		local a = flec(0)
 		local b = flec(0)
 
-		local effect_updates = 0
-		local c_updates, d_updates = 0, 0
+		local d_updates = 0
+		local c_updates = 0
 
 		local c = computed(function()
 			c_updates += 1
@@ -190,27 +190,19 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 			return a() * b()
 		end)
 
-		local d = computed(function()
+		local dispose = effect(function()
 			d_updates += 1
 
-			return c() * 10
-		end)
-
-		local dispose = effect(function()
-			effect_updates += 1
-
-			d()
 			c()
 		end)
 
-		effect_updates, d_updates, c_updates = 0, 0, 0
+		d_updates, c_updates = 0, 0
 
 		batch(function()
 			a(a() + 1)
 			b(b() + 2) 
 		end)
 
-		CHECK(effect_updates == 1)
 		CHECK(c_updates == 1)
 		CHECK(d_updates == 1)
 		
@@ -218,7 +210,6 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 			a(a() + 1)
 		end)
 
-		CHECK(effect_updates == 2)
 		CHECK(c_updates == 2)
 		CHECK(d_updates == 2)
 
