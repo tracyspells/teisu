@@ -19,6 +19,10 @@ local function observe<K, V>(subject: MapMolecule<K, V>, factory: Factory<K, V>)
 	local unsubscribe
 
 	local function listener(new: Map<K, V>)
+		if type(new) ~= "table" then
+			return
+		end
+
 		local scope = get_scope()
 		local previous_cleanups
 
@@ -59,11 +63,7 @@ local function observe<K, V>(subject: MapMolecule<K, V>, factory: Factory<K, V>)
 	unsubscribe = subscribe(subject, listener)
 
 	peek(function()
-		local result = subject()
-
-		if type(result) == "table" then
-			listener(result)
-		end
+		listener(subject())
 
 		return nil
 	end)
