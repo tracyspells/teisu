@@ -339,44 +339,61 @@ local typeof = function(v)
 end :: any
 
 local t = {} :: any do
-    local pending = {}
+    local function spawn<A..., R...>(fn: thread | (A...) -> R..., ...: A...): thread
+        if type(fn) == "thread" then
+            coroutine.resume(fn, ...)
+            return fn
+        end
 
-    local function spawn<T...>(fn: (T...) -> (...any), ...: T...): thread
         local thread = coroutine.create(fn)
         coroutine.resume(thread, ...)
         return thread
     end
 
-    local function wait(t: number?): number
-        table.insert(pending, { time_left = t or 0, time_waited = 0, thread = coroutine.running() })
-        return coroutine.yield()
+    local function wait(seconds: number?): number
+        local start_time = os.clock()
+        local end_time = start_time + (seconds or 1)
+        local clock_time: number
+
+        repeat
+            clock_time = os.clock()
+        until clock_time >= end_time 
+
+        return clock_time - start_time
     end
 
     local function close(thread: thread)
-        coroutine.close(thread)
+        local ok = coroutine.close(thread)
+
+        if not ok then
+            error(debug.traceback(thread, "[TASK]: could not cancel thread"))
+        end
     end
 
-    local function step(dt: number?)
-        local delta_time = if not dt then 0.1 else dt
-        
-        for i = #pending, 1, -1 do
-            local data = pending[i]
-
-            data.time_left -= delta_time
-            data.time_waited += delta_time
-
-            if data.time_left <= 0 then
-                pending[i] = pending[#pending]
-                pending[#pending] = nil
-                coroutine.resume(data.thread, data.time_waited)
+    local function delay<A..., R...>(
+        seconds: number, 
+        fn: thread | (A...) -> R..., 
+        ...: A...
+    )
+        return spawn(function(
+            seconds: number, 
+            fn: thread | (A...) -> R..., 
+            ...: A...
+        )
+            wait(seconds)
+            if type(fn) == "thread" then
+                coroutine.resume(fn, ...)
+            else
+                fn(...)
             end
-        end
+        end, seconds, fn, ...)
     end
 
     t.spawn = spawn
     t.wait = wait
     t.cancel = close
-    t.step = step
+    t.delay = delay
+    t = table.freeze(t)
 end
 
 return table.freeze {
@@ -388,5 +405,5 @@ return table.freeze {
     UDim2 = UDim2 :: typeof(UDim2),
     Enum = Enum :: typeof(Enum),
     typeof = typeof :: typeof(typeof),
-    task = t :: typeof(task) & { step: (dt: number?) -> () }
+    task = t :: typeof(task)
 }
