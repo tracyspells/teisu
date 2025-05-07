@@ -1,6 +1,6 @@
 [package]
 name = "tracyspells/teisu"
-version = "0.3.0-rc1"
+version = "0.3.0-rc"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 license = "MIT"
