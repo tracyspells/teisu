@@ -46,8 +46,8 @@ end)
 
 ```luau [Example B]
 local test = flec({ 1, 2, 3 })
-local double = mapped(test, function(number) 
-   return number() * 2
+local double = mapped(test, function(number, index) 
+   return number() * 2, index
 end)
 
 print(double()) --> { 2, 4, 6 }
@@ -60,6 +60,41 @@ local all_uppercase = mapped(source, function(value)
 end)
 
 print(all_uppercase()) --> { "I'M THE STRONGEST THERE IS!" }
+```
+
+```luau [Example D]
+local new = Teisu.new
+local computed = Teisu.computed
+local mount = Teisu.mount
+
+local function text(result: () -> string)
+    return new "TextLabel" {
+        AnchorPoint = Vector2.one * 0.5,
+        Size = UDim2.fromScale(1, 0),
+        BackgroundTransparency = 1,
+        Text = computed(function()
+            return `{result()}`
+        end)
+    }
+end
+
+mount(function()
+    local usernames = { "OnlyTwentyCharacters", "tracyspells" }
+    local text_labels = mapped(usernames, function(value) 
+        return text(value)
+    end)
+
+    return new "ScreenGui" {
+        Name = "usernames",
+
+        new "Frame" {
+            AnchorPoint = Vector2.one * 0.5,
+            Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.fromOffset(300, 300),
+            text_labels
+        }
+    }
+end, Players.LocalPlayer.PlayerGui)
 ```
 :::
 
