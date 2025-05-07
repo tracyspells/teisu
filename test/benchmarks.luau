@@ -4,6 +4,8 @@ local testkit = require("@testkit/")
 local flec = teisu.flec
 local computed = teisu.computed
 local batch = teisu.batch
+local mapped = teisu.mapped
+local effect = teisu.effect
 
 local N = 2 ^ 18 -- 262144
 
@@ -14,12 +16,12 @@ local function TITLE(name: string)
 end
 
 
-TITLE "flecs"
+TITLE "flec()"
 
-BENCH("flec creation", function()  
+BENCH("creation", function()  
     local cache = table.create(N)
 
-    for i = 1, N do
+    for i = 1, START(N) do
         cache[i] = flec(1)
     end
 end)
@@ -76,7 +78,7 @@ BENCH("a --> b", function()
     end
 end)
 
-BENCH("1 --> 1000", function()
+BENCH("a --> b (x1000)", function()
     local src = flec(-1)
 
     for i = 1, 1000 do
@@ -107,7 +109,7 @@ BENCH("update 1->1->1->1...1000 graph", function()
     end
 end)
 
-BENCH("update 1000->1 graph", function()
+BENCH("a (x1000) --> b", function()
     local srcs = {}
     for i = 1, 1000 do
         srcs[i] = flec(0)
@@ -125,7 +127,7 @@ BENCH("update 1000->1 graph", function()
     end
 end)
 
-BENCH("update 1000->1 graph (batched)", function()
+BENCH("a (x1000) --> b (computed) [batched]", function()
     local srcs = {}
     for i = 1, 1000 do
         srcs[i] = flec(0)
@@ -137,14 +139,116 @@ BENCH("update 1000->1 graph (batched)", function()
         end
         return false
     end)()
+   
+    START()
 
-    for i = 1, START(1) do
-        batch(function()
-            for idx = 1, 1000 do
-                srcs[idx](i)
-            end
-        end)
+    batch(function()
+        for idx = 1, 1000 do
+            srcs[idx](idx)
+        end
+    end)
+end)
+
+local X = 1000
+BENCH(`a (x{X}) --> b (effect) [batched]`, function()
+    local srcs = {}
+    for i = 1, X do
+        srcs[i] = flec(0)
     end
+
+    effect(function()
+        for i = 1, X do
+            srcs[i]()
+        end
+    end)
+
+    START()
+
+    batch(function()
+        for idx = 1, X do
+            srcs[idx](idx)
+        end
+    end)
+end)
+
+N /= 1024
+
+TITLE "mapped()"
+
+BENCH("all new", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    START(N)
+
+    mapped(source, function()
+        return {}
+    end)()
+end)
+
+BENCH("no changes", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    mapped(source, function()
+        return {}
+    end)()
+
+    START(N)
+
+    source(data)
+end)
+
+BENCH("all changes", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    mapped(source, function()
+        return {}
+    end)()
+
+    for i, v in data do
+        data[i] = v + 1
+    end
+
+    START(N)
+
+    source(data)
+end)
+
+BENCH("all deletions", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    mapped(source, function()
+        return {}
+    end)()
+
+   table.clear(data)
+
+    START(N)
+
+    source(data)
 end)
 
 return nil
