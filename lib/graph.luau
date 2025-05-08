@@ -328,11 +328,13 @@ local function updateIfNecessary<T>(node: Node<T>)
 end
 
 local function updateDescendants(sourceNode: Node<any>)
-	if sourceNode.isPartOfBatch == true then
+	local is_batching = flags.batching == true
+
+	if sourceNode.isPartOfBatch then
 		sourceNode.isPartOfBatch = false
 	end
 
-	if flags.batching == true and sourceNode.isPartOfBatch == true then
+	if is_batching and sourceNode.isPartOfBatch then
 		return
 	end
 
@@ -342,8 +344,12 @@ local function updateDescendants(sourceNode: Node<any>)
 
 	local queue: Array<Set<Node<any>>> = { sourceNode.children }
 
-	local eagerNodes: Array<Node<any>> = {}
-	local eagerNodesSeen: Set<Node<any>> = {}
+	local numOfEagerNodes = 0
+	local eagerNodes: Set<Node<any>> = if is_batching then batched else {}
+
+	if is_batching and not sourceNode.isPartOfBatch then
+		sourceNode.isPartOfBatch = true
+	end
 
 	repeat
 		local children = table.remove(queue, 1) :: Set<Node<any>>
@@ -355,31 +361,28 @@ local function updateDescendants(sourceNode: Node<any>)
 			
 			child.state = if isChildEager or isDirectChild then "dirty" else "check"
 
-			if isChildEager and eagerNodesSeen[child] == nil then
-				table.insert(eagerNodes, child)
-				eagerNodesSeen[child] = true
+			if isChildEager and eagerNodes[child] == nil then
+				if not is_batching then
+					numOfEagerNodes += 1
+				end
+
+				eagerNodes[child] = true
 			end
 
-			if not isEmpty then
+			if not isEmpty and not isChildEager then
 				table.insert(queue, child.children)
+			end
+
+			if isChildEager then
+				unparent(child)
 			end
 		end
 	until #queue <= 0 or children == nil
 
-	if #eagerNodes <= 0 then return end
+	if numOfEagerNodes <= 0 then return end
 
-	if flags.batching == true and sourceNode.isPartOfBatch == false then
-		sourceNode.isPartOfBatch = true
-	end
-
-	for _, node in eagerNodes do
-		if flags.batching == true then
-			if batched[node] == nil then
-				batched[node] = true
-			end
-		else
-			updateIfNecessary(node)
-		end
+	for node in eagerNodes do
+		updateIfNecessary(node)
 	end
 end
 
