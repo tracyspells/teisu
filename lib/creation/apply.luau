@@ -1,3 +1,4 @@
+local typeof = game and typeof or require("@mock/").typeof
 local types = require("@types/")
 local spring = require("@spring/")
 local tween = require("@tween/")
@@ -14,6 +15,7 @@ type Set<T> = types.Set<T>
 
 type Node<T> = types.Node<T>
 type Molecule<T> = types.Molecule<T>
+type InstanceMolecule = Molecule<Instance | { Instance }>
 
 type Cache = {
 	-- event listeners to connect after properties are set
@@ -52,29 +54,30 @@ do
 		end)
 	end
 
-	local function children(instance: Instance, source: Molecule<Instance | { Instance }>)
+	local function children(instance: Instance, source: InstanceMolecule)
 		local owner = get_scope()
 		local new_parented: Set<Instance> = {}
 		local old_parented: Set<Instance> = {}
 
-		local new_connections: { [Molecule<Instance | { Instance }>]: () -> () } = {}
-		local old_connections: { [Molecule<Instance | { Instance }>]: () -> () } = {}
+		local new_connections: { [InstanceMolecule]: () -> () } = {}
+		local old_connections: { [InstanceMolecule]: () -> () } = {}
 
 		local function update_children()
 			old_parented, new_parented = new_parented, old_parented
 			old_connections, new_connections = new_connections, old_connections
 
 			local function process_child(child: Instance | { Instance } | () -> Instance | { Instance })
-				if type(child) == "userdata" then
-					new_parented[child] = true
+				if typeof(child) == "Instance" then
+					local instance: Instance = child :: any
+					new_parented[instance] = true
 
-					if old_parented[child] == nil then
-						child.Parent = instance -- if child wasn't already parented then parent it
+					if old_parented[instance] == nil then
+						instance.Parent = instance -- if child wasn't already parented then parent it
 					else
-						old_parented[child] = nil -- remove child from cache if it was already in cache
+						old_parented[instance] = nil -- remove child from cache if it was already in cache
 					end
 				elseif type(child) == "table" then
-					for _, c in next, child do
+					for _, c in child do
 						process_child(c)
 					end
 				elseif type(child) == "function" then
@@ -104,7 +107,7 @@ do
 			table.clear(old_parented)
 
 			-- cleanup connections
-			for _, disconnect in next, old_connections do
+			for _, disconnect in old_connections do
 				disconnect()
 			end
 
