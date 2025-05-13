@@ -90,8 +90,8 @@ local function get_tween_props(props: TweenProps?): TweenProps
 end
 
 local function are_props_equal(old: TweenProps, new: TweenProps): boolean
-	if 
-		old.delay ~= new.delay 
+	if
+		old.delay ~= new.delay
 		or old.direction ~= new.direction
 		or old.duration ~= new.duration
 		or old.repeats ~= new.repeats
@@ -146,13 +146,13 @@ local function step_tweens(dt: number)
 
 		tween.progress = math.min(tween.progress + dt, tween.duration)
 
-		local start, goal, current  = tween.start_pos, tween.target_pos, tween.pos
+		local start, goal, current = tween.start_pos, tween.target_pos, tween.pos
 
 		local blend
-	
+
 		if tween.reversing then
 			blend = 1 - tween.progress / tween.duration
-		else 
+		else
 			blend = tween.progress / tween.duration
 		end
 
@@ -184,7 +184,7 @@ end
 
 local function update_tween_sources()
 	local results: { Node<unknown> } = {}
-	
+
 	for tween, output in tweens do
 		local result = convert[tween.goalType].pack(tween.pos)
 
@@ -291,7 +291,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 				if select("#", ...) == 0 then
 					local scope = get_scope()
-			
+
 					if scope then
 						if scope.type == "cleanup" and not owner then
 							return push_cleanup(scope, cleanup, self)
@@ -320,7 +320,8 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 		push_cleanup(owner, cleanup, self)
 	end
 
-	local properties = computed(function(): typeof(DEFAULT_TWEEN_PROPS)
+	local properties = computed(function(): typeof(DEFAULT_TWEEN_PROPS) & { goal: T }
+		local goal = source()
 		local duration = peek(tween_props.duration, true) :: number
 		local style = peek(tween_props.style, true)
 		local direction: EasingDirection = peek(tween_props.direction, true)
@@ -328,19 +329,32 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 		local reverses = peek(tween_props.reverses, true)
 		local repeats = math.max(peek(tween_props.repeats, true), -1) + 1
 
-		return { 
-			duration = duration, style = style, 
+		return {
+			goal = goal,
+			duration = duration,
+			style = style,
 			direction = direction,
-			delay = delay, reverses = reverses, repeats = repeats 
+			delay = delay,
+			reverses = reverses,
+			repeats = repeats,
 		}
-	end, function(old, new) return if old ~= new then false else are_props_equal(old, new) end)
+	end, function(old, new)
+		if (old :: any) == nil and (new :: any) ~= nil then
+			return false
+		end
+
+		if old.goal ~= new.goal or are_props_equal(old, new) == false then
+			return false
+		end
+
+		return true
+	end)
 
 	dispose = effect(function()
 		local changes = 0
 		local p = properties()
-		local delay, duration, style, direction, reverses, repeats = p.delay, p.duration, p.style, p.direction, p.reverses, p.repeats
-
-		local goal = source()
+		local goal, delay, duration, style, direction, reverses, repeats =
+			p.goal, p.delay, p.duration, p.style, p.direction, p.reverses, p.repeats
 		local goal_type = typeof(goal)
 
 		updates += 1
@@ -411,7 +425,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 		if changes > 0 then
 			local last_target_pos = state.target_pos
-			
+
 			if last_target_pos then
 				last_target_pos = table.clone(last_target_pos)
 			end
@@ -422,7 +436,7 @@ local function tween<T>(source: Molecule<T>, props: TweenProps?): Tween<T>
 
 			if updates == 0 then
 				output.cache = state.goal
-				
+
 				state.pos = table.create(state.value_count, 0)
 			end
 
