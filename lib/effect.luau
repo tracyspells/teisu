@@ -59,20 +59,22 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 			node.cache :: T
 		)
 
-		if not disconnected then -- `dispose()` can still be called inside the callback
-			inner_scope = scope
-
-			local result: any = new_value
-			if type(result) == "table" then
-				-- create a shallow copy so that functions like `subscribe` 
-				-- can work properly
-				result = table.clone(result) 
-			end
-
-			node.cache = result :: T
-			depend(scope, node)
-			flush_captures(scope)
+		if disconnected then -- `dispose()` can still be called inside the callback
+			return false
 		end
+
+		inner_scope = scope
+
+		local result: any = new_value
+		if type(result) == "table" then
+			-- create a shallow copy so that functions like `subscribe`
+			-- can work properly
+			result = table.clone(result)
+		end
+
+		node.cache = result :: T
+		depend(scope, node)
+		flush_captures(scope)
 
 		return true
 	end)
