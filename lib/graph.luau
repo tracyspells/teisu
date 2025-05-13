@@ -377,7 +377,7 @@ local function updateDescendants(sourceNode: Node<any>)
 				unparent(child)
 			end
 		end
-	until #queue <= 0 or children == nil
+	until #queue <= 0
 
 	if numOfEagerNodes <= 0 then return end
 
