@@ -95,9 +95,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local a = flec(0)
 		local disposed = false
-		local dispose
-
-		dispose = effect(function()
+		
+		effect(function(dispose)
 			if dispose then
 				CHECK(not disposed)
 				dispose()
