@@ -354,12 +354,12 @@ local function updateDescendants(sourceNode: Node<any>)
 	repeat
 		local children = table.remove(queue, 1) :: Set<Node<any>>
 
-		for child in next, children do
+		for child in children do
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager == true
 			local isEmpty = next(child.children) == nil
 			
-			child.state = if isChildEager or isDirectChild then "dirty" else "check"
+			child.state = if isDirectChild then "dirty" else "check"
 
 			if isChildEager and eagerNodes[child] == nil then
 				if not is_batching then
@@ -373,7 +373,7 @@ local function updateDescendants(sourceNode: Node<any>)
 				table.insert(queue, child.children)
 			end
 
-			if isChildEager then
+			if isChildEager and isDirectChild then
 				unparent(child)
 			end
 		end
