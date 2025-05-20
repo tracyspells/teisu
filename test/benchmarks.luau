@@ -4,7 +4,7 @@ local testkit = require("@testkit/")
 local flec = teisu.flec
 local computed = teisu.computed
 local batch = teisu.batch
-local mapped = teisu.mapped
+local values, indexes = teisu.values, teisu.indexes
 local effect = teisu.effect
 
 local N = 2 ^ 18 -- 262144
@@ -173,7 +173,7 @@ end)
 
 N /= 1024
 
-TITLE "mapped()"
+TITLE "values()"
 
 BENCH("all new", function()
     local data = {}
@@ -186,7 +186,7 @@ BENCH("all new", function()
 
     START(N)
 
-    mapped(source, function()
+    indexes(source, function()
         return {}
     end)()
 end)
@@ -200,7 +200,7 @@ BENCH("no changes", function()
 
     local source = flec(data)
 
-    mapped(source, function()
+    indexes(source, function()
         return {}
     end)()
 
@@ -218,7 +218,7 @@ BENCH("all changes", function()
 
     local source = flec(data)
 
-    mapped(source, function()
+    indexes(source, function()
         return {}
     end)()
 
@@ -240,7 +240,85 @@ BENCH("all deletions", function()
 
     local source = flec(data)
 
-    mapped(source, function()
+    indexes(source, function()
+        return {}
+    end)()
+
+   table.clear(data)
+
+    START(N)
+
+    source(data)
+end)
+
+TITLE "indexes()"
+
+BENCH("all new", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    START(N)
+
+    indexes(source, function()
+        return {}
+    end)()
+end)
+
+BENCH("no changes", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    indexes(source, function()
+        return {}
+    end)()
+
+    START(N)
+
+    source(data)
+end)
+
+BENCH("all changes", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    indexes(source, function()
+        return {}
+    end)()
+
+    for i, v in data do
+        data[i] = v + 1
+    end
+
+    START(N)
+
+    source(data)
+end)
+
+BENCH("all deletions", function()
+    local data = {}
+
+    for i = 1, N do
+        data[i] = i
+    end
+
+    local source = flec(data)
+
+    indexes(source, function()
         return {}
     end)()
 
