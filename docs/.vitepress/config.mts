@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -6,6 +7,12 @@ export default defineConfig({
   description: "A reactive library for Luau",
   base: "/teisu/",
   cleanUrls: true,
+  
+  markdown: {
+    config(md) {
+      md.use(tabsMarkdownPlugin)
+    }
+  },
 
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
@@ -50,9 +57,12 @@ export default defineConfig({
         },
 
         {
-          text: "Transformers",
+          text: "Tables",
           items: [
-            { text: "Mapped", link: "/tutorials/transformers/mapped" },
+            { text: "Values", link: "/tutorials/tables/values" },
+            { text: "Indexes", link: "/tutorials/tables/indexes" },
+            { text: "Keys", link: "/tutorials/tables/keys" },
+            { text: "When should I use...", link: "/tutorials/tables/when-should-i-use-what" },
           ],
         },
 
@@ -90,8 +100,9 @@ export default defineConfig({
             { text: "Teisu", link: "/api/teisu" },
             { text: "Reactivity: Core", link: "/api/reactivity-core" },
             { text: "Reactivity: Observers", link: "/api/reactivity-observers" },
+            { text: "Reactivity: Tables", link: "/api/reactivity-tables" },
             { text: "Reactivity: Utility", link: "/api/reactivity-utility" },
-            { text: "Reactivity: Dynamic", link: "/api/reactivity-dynamic" },
+            { text: "Reactivity: Conditions", link: "/api/reactivity-conditions" },
             { text: "Element Creation", link: "/api/element-creation" },
             { text: "Animation", link: "/api/animation" },
             { text: "Networking", link: "/api/networking" },
