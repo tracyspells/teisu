@@ -196,9 +196,6 @@ function keys<K0, V0, V1>(
 
 -   `mapper`: A function that is called for each key in your `state`. The mapper can return a key.
 
-    ::: danger Returning Instances
-    Unlike `values` and `indexes`, you cannot return an Instance inside your `mapper` function. This is due to the fact that `Teisu.keys` was meant to process things like tables, strings, numbers, etc. [`Teisu.strict`](../api/teisu/#strict), if enabled, has checks for this.
-    :::
 
 ### Returns
 
