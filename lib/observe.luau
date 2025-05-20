@@ -18,8 +18,20 @@ local function observe<K, V>(subject: MapMolecule<K, V>, factory: Factory<K, V>)
 	local connections: { [K]: Cleanup } = {}
 	local unsubscribe
 
+	local function cleanup_connections()
+		for _, disconnect in connections do
+			peek(disconnect)
+		end
+
+		table.clear(connections)
+	end
+
 	local function listener(new: Map<K, V>)
 		if type(new) ~= "table" then
+			if new == nil then
+				cleanup_connections()
+			end
+
 			return
 		end
 
@@ -52,11 +64,7 @@ local function observe<K, V>(subject: MapMolecule<K, V>, factory: Factory<K, V>)
 	end
 	
 	local function disconnect()
-		for _, disconnect in connections do
-			peek(disconnect)
-		end
-
-		table.clear(connections)
+		cleanup_connections()
 		unsubscribe()
 	end
 
