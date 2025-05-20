@@ -74,15 +74,7 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 		end
 
 		inner_scope = scope
-
-		local result: any = new_value
-		if type(result) == "table" then
-			-- create a shallow copy so that functions like `subscribe`
-			-- can work properly
-			result = table.clone(result)
-		end
-
-		node.cache = result :: T
+		node.cache = new_value
 		depend(scope, node)
 		flush_captures(scope)
 
