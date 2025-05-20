@@ -49,14 +49,24 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 		end
 
 		local scope = new_scope(owner)
+
+		local function runner(...): T
+			local new_value = callback(...)
+
+			if scope.effect_captures > 0 then
+				return error(`cannot run an effect inside another effect`)
+			end
+
+			return new_value
+		end
 		
 		push_scope(scope)
 		local new_value = try(
-			callback,
+			runner,
 			function() pop_scope() end,
 			function() destroy_scope(scope) end,
 			dispose,
-			node.cache :: T
+			node.cache
 		)
 
 		if disconnected then -- `dispose()` can still be called inside the callback
@@ -80,6 +90,7 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 	end)
 
 	if owner then
+		owner.effect_captures += 1
 		push_cleanup(owner, dispose, node)
 	end
 

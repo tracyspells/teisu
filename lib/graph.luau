@@ -16,6 +16,7 @@ type Task = types.Task
 export type Scope = {
 	cleanups: { Task | Cleanup } | false, -- { object, cleanup_function }
 	captures: { [Node<any>]: boolean } | false,
+	effect_captures: number,
 	owned: { Scope } | false,
     owner: Scope | false,
 	type: ("cleanup")?,
@@ -61,6 +62,7 @@ local function new_scope(owner: Scope?, type: ("cleanup")?): Scope
 	local scope: Scope = {
 		cleanups = false,
 		captures = false,
+		effect_captures = 0,
 		owned = false,
 		owner = if owner ~= nil then owner else false,
 		type = type,
@@ -135,6 +137,10 @@ local function push_child_to_scope<T>(scope: Scope, node: Node<T>)
 end
 
 local function destroy_scope(scope: Scope)
+	if scope.effect_captures > 0 then
+		scope.effect_captures = 0
+	end
+
 	flush_captures(scope)
 	flush_cleanups(scope)
 	
