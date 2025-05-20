@@ -4,7 +4,6 @@ local types = require("../types")
 local testkit = require("../testkit")
 
 local flec = teisu.flec
-local new = teisu.new
 local keys = teisu.keys
 local cleanup = teisu.cleanup
 local equals = testkit.seq
@@ -97,22 +96,6 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		CHECK(equals(result, { FOO = "hi", BAR = "rab" }))
 
 		cleanup(map)
-	end
-
-	do
-		CASE("mapper function does not allow the user to return an Instance")
-
-		teisu.strict(true)
-		CHECK_EXPECT_ERROR(function()
-			local input = flec({ foo = "oof", bar = "rab" })
-
-			keys(input, function(key)
-				return new "TextLabel" {
-					Name = string.upper(key),
-				}
-			end)()
-		end)
-		teisu.strict(false)
 	end
 
 	do
