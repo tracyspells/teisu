@@ -125,14 +125,6 @@ local function create_sub_object<K0, V0, K1, V1>(
 			end
 
 			if typeof(output_value) == "Instance" and instance_cache == nil then
-				if type == "keys" then
-					if flags.strict == true then
-						error(`The 'mapper' callback in Teisu.keys cannot return an Instance as a value.`)
-					end
-
-					return nil, nil
-				end
-
 				local instance: Instance = output_value :: any
 				instance_cache = { key = output_key, value = instance }
 				push_cleanup(scope, function() instance_cache = nil :: never end, instance)
