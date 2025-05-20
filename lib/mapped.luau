@@ -168,9 +168,7 @@ local function mapped<K0, V0, K1, V1>(
 	end
 
 	node = create_derived_node(function()
-		if node.cache ~= false then
-			table.clear(node.cache)
-		end
+		node.cache = {}
 
 		-- step 1: capture dependencies
 		push_scope(sub_owner)
@@ -194,8 +192,8 @@ local function mapped<K0, V0, K1, V1>(
 			local old_key = object.input_key
 
 			if pending_pairs[old_key] == nil then
-				object.destroy()
 				sub_objects[object] = nil
+				object.destroy()
 			else
 				local new_key, new_value = old_key, pending_pairs[old_key]
 
@@ -269,8 +267,6 @@ local function mapped<K0, V0, K1, V1>(
 		return true
 	end)
 
-	node.cache = {}
-
 	if owner then
 		push_cleanup(owner, destroy, node)
 	end
@@ -332,9 +328,7 @@ local function indexes<K0, V0, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, Mol
 	end
 
 	node = create_derived_node(function()
-		if node.cache ~= false then
-			table.clear(node.cache)
-		end
+		node.cache = {}
 
 		-- step 1: capture dependencies
 		push_scope(sub_owner)
@@ -413,8 +407,6 @@ local function indexes<K0, V0, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, Mol
 
 		return true
 	end)
-
-	node.cache = {}
 
 	if owner then
 		push_cleanup(owner, destroy, node)
