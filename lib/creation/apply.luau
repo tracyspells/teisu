@@ -68,13 +68,14 @@ do
 
 			local function process_child(child: Instance | { Instance } | () -> Instance | { Instance })
 				if typeof(child) == "Instance" then
-					local instance: Instance = child :: any
-					new_parented[instance] = true
+					local c: Instance = child :: any
+					
+					new_parented[c] = true
 
-					if old_parented[instance] == nil then
-						instance.Parent = instance -- if child wasn't already parented then parent it
+					if old_parented[c] == nil then
+						c.Parent = instance -- if child wasn't already parented then parent it
 					else
-						old_parented[instance] = nil -- remove child from cache if it was already in cache
+						old_parented[c] = nil -- remove child from cache if it was already in cache
 					end
 				elseif type(child) == "table" then
 					for _, c in child do
