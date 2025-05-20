@@ -54,7 +54,7 @@ do
 		end)
 	end
 
-	local function children(instance: Instance, source: InstanceMolecule)
+	local function children(applyTo: Instance, source: InstanceMolecule)
 		local owner = get_scope()
 		local new_parented: Set<Instance> = {}
 		local old_parented: Set<Instance> = {}
@@ -73,7 +73,7 @@ do
 					new_parented[c] = true
 
 					if old_parented[c] == nil then
-						c.Parent = instance -- if child wasn't already parented then parent it
+						c.Parent = applyTo -- if child wasn't already parented then parent it
 					else
 						old_parented[c] = nil -- remove child from cache if it was already in cache
 					end
