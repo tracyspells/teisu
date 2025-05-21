@@ -89,7 +89,7 @@ function computed<T>(callback: () -> T, equals: (old: T, new: T) -> boolean)
 
 ### Returns
 
-`computed` returns a [read-only flec](../tutorials/fundamentals/molecules).
+`computed` returns a read-only flec.
 
 ::: danger
 Computed calculations should be immediate and <u>never delay</u>. You should never use a `computed` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
@@ -195,11 +195,11 @@ effect(function(_, old)
     local new = condition()
 
     if old ~= new then
-        print(`condition changed: {condition}`)
+        print(`condition changed to: {new} from {old}`)
     end
 
     return new
-end, nil)
+end, condition())
 
 task.delay(2, condition, "bad")
 ```
