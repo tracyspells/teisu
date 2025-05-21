@@ -95,9 +95,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		local a = flec(0)
 		local disposed = false
-		local dispose
-
-		dispose = effect(function()
+		
+		effect(function(dispose)
 			if dispose then
 				CHECK(not disposed)
 				dispose()
@@ -136,21 +135,21 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 	do
 		CASE("can be scheduled for deletion in root()")
 		
-		local is_root_scope_cleaned_up = false
+		local is_effect_cleaned_up = false
 
 		local destroy = root(function()
 			local a = flec(0)
 
-			cleanup(function() is_root_scope_cleaned_up = true end)
-			
 			effect(function()
+				cleanup(function() is_effect_cleaned_up = true end)
+
 				a()
 			end)
 		end)
 
-		CHECK(is_root_scope_cleaned_up == false)
+		CHECK(is_effect_cleaned_up == false)
 		destroy()
-		CHECK(is_root_scope_cleaned_up == true)
+		CHECK(is_effect_cleaned_up == true)
 	end
 
 	do
@@ -203,5 +202,22 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
 		CHECK(reruns == 4)
 		CHECK(current == 2)
+	end
+
+	do
+		CASE("nested effects aren't allowed")
+
+		CHECK_EXPECT_ERROR(function() 
+			local a = flec(0)
+			local b = flec(0)
+			
+			effect(function()
+				a()
+
+				effect(function()
+					b()
+				end)
+			end)
+		end)
 	end
 end

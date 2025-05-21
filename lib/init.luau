@@ -5,13 +5,13 @@ local sync = require("@sync/")
 local action = require("@action/")
 local conditions = require("@conditions/")
 local flags = require("@flags/")
+local mapped = require("@mapped/")
 local flec = require("@flec/")
 local subscribe = require("@subscribe/")
 local effect = require("@effect/")
 local observe = require("@observe/")
 local computed = require("@computed/")
 local peek = require("@peek/")
-local mapped = require("@mapped/")
 local batch = require("@batch/")
 
 export type Flec<T> = types.Flec<T>
@@ -23,7 +23,7 @@ export type derivable<T> = Derivable<T>
 export type Spring<T> = types.Spring<T>
 export type spring<T> = Spring<T>
 export type SyncPayload = types.SyncPayload
-export type sync_payload = SyncPayload
+export type syncPayload = SyncPayload
 export type Animatable = types.Animatable
 export type animatable = Animatable
 export type EasingStyle = types.EasingStyle
@@ -34,7 +34,7 @@ export type easingDirection = EasingDirection
 local update_animations = animation.step()
 local update_server = sync.step_server()
 
-local mount, new, root, _apply = creation.mount, creation.new, creation.root, creation.apply
+local mount, new, root = creation.mount, creation.new, creation.root
 local cleanup = creation.cleanup
 
 local stepped: RBXScriptConnection?
@@ -67,16 +67,16 @@ end
 
 local function apply(instance: Instance)
 	return function(props: { [any]: any })
-		local unroot = root(function()
-			_apply(instance, props)
+		local destroy = root(function()
+			new(instance, props)
 		end)
-		instance.Destroying:Once(unroot)
+		instance.Destroying:Once(destroy)
 		return instance
 	end
 end
 
 local function strict(value: boolean?): boolean
-	if value ~= nil then
+	if type(value) == "boolean" then
 		flags.strict = value
 	end
 
@@ -101,16 +101,22 @@ return table.freeze {
 	flec = flec,
 	computed = computed,
 	effect = effect,
+
+	-- conditions
 	show = conditions.show,
 	switch = conditions.switch,
 
 	-- utils
 	batch = batch,
-	mapped = mapped,
 	observe = observe,
 	subscribe = subscribe,
 	cleanup = cleanup,
 	peek = peek,
+
+	-- tables
+	keys = mapped.keys,
+	values = mapped.values,
+	indexes = mapped.indexes,
 
 	-- actions
 	action = action.action,

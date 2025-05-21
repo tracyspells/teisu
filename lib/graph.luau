@@ -16,6 +16,7 @@ type Task = types.Task
 export type Scope = {
 	cleanups: { Task | Cleanup } | false, -- { object, cleanup_function }
 	captures: { [Node<any>]: boolean } | false,
+	effect_captures: number,
 	owned: { Scope } | false,
     owner: Scope | false,
 	type: ("cleanup")?,
@@ -61,6 +62,7 @@ local function new_scope(owner: Scope?, type: ("cleanup")?): Scope
 	local scope: Scope = {
 		cleanups = false,
 		captures = false,
+		effect_captures = 0,
 		owned = false,
 		owner = if owner ~= nil then owner else false,
 		type = type,
@@ -135,6 +137,10 @@ local function push_child_to_scope<T>(scope: Scope, node: Node<T>)
 end
 
 local function destroy_scope(scope: Scope)
+	if scope.effect_captures > 0 then
+		scope.effect_captures = 0
+	end
+
 	flush_captures(scope)
 	flush_cleanups(scope)
 	
@@ -328,11 +334,13 @@ local function updateIfNecessary<T>(node: Node<T>)
 end
 
 local function updateDescendants(sourceNode: Node<any>)
-	if sourceNode.isPartOfBatch == true then
+	local is_batching = flags.batching == true
+
+	if sourceNode.isPartOfBatch then
 		sourceNode.isPartOfBatch = false
 	end
 
-	if flags.batching == true and sourceNode.isPartOfBatch == true then
+	if is_batching and sourceNode.isPartOfBatch then
 		return
 	end
 
@@ -342,44 +350,45 @@ local function updateDescendants(sourceNode: Node<any>)
 
 	local queue: Array<Set<Node<any>>> = { sourceNode.children }
 
-	local eagerNodes: Array<Node<any>> = {}
-	local eagerNodesSeen: Set<Node<any>> = {}
+	local numOfEagerNodes = 0
+	local eagerNodes: Set<Node<any>> = if is_batching then batched else {}
+
+	if is_batching and not sourceNode.isPartOfBatch then
+		sourceNode.isPartOfBatch = true
+	end
 
 	repeat
 		local children = table.remove(queue, 1) :: Set<Node<any>>
 
-		for child in next, children do
+		for child in children do
 			local isDirectChild = child.parents[sourceNode] == true
 			local isChildEager = child.eager == true
 			local isEmpty = next(child.children) == nil
 			
-			child.state = if isChildEager or isDirectChild then "dirty" else "check"
+			child.state = if isDirectChild then "dirty" else "check"
 
-			if isChildEager and eagerNodesSeen[child] == nil then
-				table.insert(eagerNodes, child)
-				eagerNodesSeen[child] = true
+			if isChildEager and eagerNodes[child] == nil then
+				if not is_batching then
+					numOfEagerNodes += 1
+				end
+
+				eagerNodes[child] = true
 			end
 
-			if not isEmpty then
+			if not isEmpty and not isChildEager then
 				table.insert(queue, child.children)
 			end
-		end
-	until #queue <= 0 or children == nil
 
-	if #eagerNodes <= 0 then return end
-
-	if flags.batching == true and sourceNode.isPartOfBatch == false then
-		sourceNode.isPartOfBatch = true
-	end
-
-	for _, node in eagerNodes do
-		if flags.batching == true then
-			if batched[node] == nil then
-				batched[node] = true
+			if isChildEager and isDirectChild then
+				unparent(child)
 			end
-		else
-			updateIfNecessary(node)
 		end
+	until #queue <= 0
+
+	if numOfEagerNodes <= 0 then return end
+
+	for node in eagerNodes do
+		updateIfNecessary(node)
 	end
 end
 

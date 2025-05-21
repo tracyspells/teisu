@@ -26,7 +26,7 @@ Manually steps animations and state syncing.
 function step(delta_time: number): ()
 ```
 
-::: warning
+::: tip
 
 In most situations, calling `step` is not necessary as it's automatically called every `Heartbeat`.
 

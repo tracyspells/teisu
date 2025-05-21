@@ -279,20 +279,22 @@ local function spring<T>(source: Molecule<T>, speed: UsedAs<number>?, damping: U
 		push_cleanup(owner, cleanup, self)
 	end
 
-	local properties = computed(function(): { speed: number, damping: number }
+	local properties = computed(function(): { goal: T,  speed: number, damping: number }
+		local goal = source()
 		local s, d = peek(speed or 1, true), peek(damping or 1, true)
 
-		return { speed = s, damping = d }
+		return { goal = goal, speed = s, damping = d }
 	end, function(old, new) 
-		if old ~= new then
+		if (old :: any) == nil and (new :: any) ~= nil then
 			return false
 		end
 
-		return old.speed == new.speed and old.damping == new.damping 
+		return old.speed == new.speed and old.damping == new.damping and old.goal == new.goal 
 	end)
 
 	dispose = effect(function()
-		local goal, p = source(), properties()
+		local p = properties()
+		local goal = p.goal
 		local goal_type = typeof(goal)
 		local _speed, _damping = p.speed, p.damping
 		local changes = 0

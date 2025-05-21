@@ -32,7 +32,7 @@ local style = { duration = 0.5, style = "Sine" }
 local animated = tween(goal, style)
 ```
 
-To check if a tween has reached it's destination, you can use `.onCompleted()`:
+To check if a tween has reached it's destination, you can use `.onComplete()`:
 
 ```luau
 animated.onComplete(function(goal: number)

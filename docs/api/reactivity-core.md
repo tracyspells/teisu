@@ -138,12 +138,9 @@ function effect<T>(callback: ( dispose: () -> (), initial_state: T ) -> T): Clea
 `effect` returns a function that destroys the effect.
 
 ::: danger
-Effects should <u>never delay</u>. You shouldn't use an `effect` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
-:::
+- Effects should <u>never delay</u>. You shouldn't use an `effect` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
 
-::: danger Nested effects
-
-Nested effects, like this for example...
+- Nested effects, like this for example...
 
 ```luau
 local a = flec("Hello, world!")
@@ -160,8 +157,8 @@ end)
 ```
 
 ...aren't allowed.
-
 :::
+
 
 **Examples:**
 

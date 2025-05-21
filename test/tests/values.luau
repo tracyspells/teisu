@@ -7,10 +7,7 @@ local count = require("../utils/count")
 
 local flec = teisu.flec
 local observe = teisu.observe
-local mapped = teisu.mapped
-local root = teisu.root
-local new = teisu.new
-local effect = teisu.effect
+local values = teisu.values
 local peek = teisu.peek
 local cleanup = teisu.cleanup
 local castToNode = graph.castToReactable
@@ -28,7 +25,8 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		CASE("validate")
 
 		local items = flec({ "a", "b", "c" })
-		local allUpperCase = mapped(items, function(item)
+		local node = castToNode(items)
+		local allUpperCase = values(items, function(item)
 			return string.upper(item())
 		end)
 		
@@ -64,33 +62,11 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		CHECK(allUpperCase()[2] == nil)
 		items({})
 		CHECK(count(allUpperCase()) == 0)
-	end
 
-	do
-		CASE("key extraction")
-
-		local items = flec({ { key = 1 }, { key = 2 }, { key = 3 } })
-		local map = mapped(items, function(item)
-			local value = item()
-			return value, value.key
-		end)
-
-		for key = 1, 3 do
-			local a, b = map()[key], items()[key]
-			CHECK(a == b)
-		end
-
-		local previous = map()
-		items({ items()[1], items()[3] })
-
-		local new = map()
-		local current = items()
-
-		CHECK(new[1] == previous[1])
-		CHECK(new[1] == current[1])
-		CHECK(new[2] == nil) 
-		CHECK(new[3] == previous[3])
-		CHECK(new[3] ==  current[2])
+		CHECK(node ~= nil and count(node.children) == 1)
+		cleanup(allUpperCase)
+		CHECK(node ~= nil and count(node.children) == 0)
+		node = nil
 	end
 
 	do
@@ -99,15 +75,10 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		local added, deleted = 0, 0
 		local cleaning_up = false
 
-		local items = flec({
-			{ key = 1, value = "a" },
-			{ key = 2, value = "b" },
-			{ key = 3, value = "c" },
-		})
-
-		local map = mapped(items, function(item)
-			local value = item()
-			return value, value.key
+		local items = flec({ "a", "b", "c" })
+		
+		local map = values(items, function(item)
+			return item()
 		end)
 
 		local stopObserving = observe(map, function(item, key)
@@ -136,85 +107,10 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 	end
 
 	do
-		CASE("root() support")
-
-		local source = flec({ 1, 2, 3 })
-		local node = castToNode(source)
-
-		local unroot, output = root(function()
-			return mapped(source, function(value)
-				return value()
-			end)
-		end)
-
-		output()
-		CHECK(node ~= nil and count(node.children) == 1)
-		unroot()
-		CHECK(node ~= nil and count(node.children) == 0)
-		node = nil
-	end
-
-	do
-		CASE("ui support")
-
-		local source = flec({ 1, 2, 3 })
-
-		local function text_label(text: () -> number)
-			return new "TextLabel" {
-				Text = function() 
-					return `{text()}` 
-				end,
-			}
-		end
-
-		local unroot, result = root(function()  
-			local list
-			local map = mapped(source, function(number)
-				return text_label(number)
-			end)
-
-			effect(function()
-				list = map()
-			end)
-
-			return list
-		end)
-
-		CHECK(result ~= nil)
-
-		for index = 1, 3 do
-			local entry: TextLabel? = result[index] :: any
-
-			CHECK(entry ~= nil)
-			CHECK((entry :: TextLabel).Text == `{index}`)
-		end
-
-		source(function(old)
-			local new = table.clone(old)
-			new[3] = nil
-
-			return new
-		end)
-
-		for index = 1, 3 do
-			local entry: TextLabel? = result[index] :: any
-
-			if index == 3 then
-				CHECK(entry == nil)
-			else
-				CHECK(entry ~= nil)
-				CHECK((entry :: TextLabel).Text == `{index}`)
-			end
-		end
-
-		unroot()
-	end
-
-	do
 		CASE("computes with constants")
 
 		local data = {foo = "oof", bar = "rab"}
-		local map = mapped(data, function(value)
+		local map = values(data, function(value)
 			return value() :: any .. "baz"
 		end)
 

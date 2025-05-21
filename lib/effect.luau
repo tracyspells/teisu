@@ -49,35 +49,40 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 		end
 
 		local scope = new_scope(owner)
+
+		local function runner(...): T
+			local new_value = callback(...)
+
+			if scope.effect_captures > 0 then
+				return error(`cannot run an effect inside another effect`)
+			end
+
+			return new_value
+		end
 		
 		push_scope(scope)
 		local new_value = try(
-			callback,
+			runner,
 			function() pop_scope() end,
 			function() destroy_scope(scope) end,
 			dispose,
-			node.cache :: T
+			node.cache
 		)
 
-		if not disconnected then -- `dispose()` can still be called inside the callback
-			inner_scope = scope
-
-			local result: any = new_value
-			if type(result) == "table" then
-				-- create a shallow copy so that functions like `subscribe` 
-				-- can work properly
-				result = table.clone(result) 
-			end
-
-			node.cache = result :: T
-			depend(scope, node)
-			flush_captures(scope)
+		if disconnected then -- `dispose()` can still be called inside the callback
+			return false
 		end
+
+		inner_scope = scope
+		node.cache = new_value
+		depend(scope, node)
+		flush_captures(scope)
 
 		return true
 	end)
 
 	if owner then
+		owner.effect_captures += 1
 		push_cleanup(owner, dispose, node)
 	end
 

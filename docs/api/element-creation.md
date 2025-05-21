@@ -22,7 +22,7 @@ function new(instance: Instance): (Properties) -> Instance
         -  **property is not an event**: creates an effect to update property
     
    -   ...and the value is not a function:
-        -  **if the value is a spring object**: creates an effect to update property
+        -  **if the value is a spring/tween object**: creates an effect to update property
 
         Otherwise it will set the property to the value.
 
