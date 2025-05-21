@@ -116,7 +116,7 @@ function indexes<K0, V0, V1>(
 ```
 
 ::: warning Duplicate values
-Having the same values appear multiple times in the input `flec` table can cause unexpected behavior. [`Teisu.strict`](../api/teisu/#strict), if enabled, can check for duplicate values and can let you know right away.
+Having the same values appear multiple times in the input `flec` table can cause unexpected behavior. [`Teisu.strict`](./teisu#strict), if enabled, can check for duplicate values and can let you know right away.
 :::
 
 ### Parameters
