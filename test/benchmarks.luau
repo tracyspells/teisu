@@ -109,7 +109,7 @@ BENCH("update 1->1->1->1...1000 graph", function()
     end
 end)
 
-BENCH("a (x1000) --> b", function()
+BENCH("a (x1000) --> b (computed)", function()
     local srcs = {}
     for i = 1, 1000 do
         srcs[i] = flec(0)
@@ -171,6 +171,20 @@ BENCH(`a (x{X}) --> b (effect) [batched]`, function()
     end)
 end)
 
+BENCH(`a --> b (effect, x{X})`, function()
+    local src = flec(0)
+
+    local effects = {}
+    for i = 1, X do
+        effects[i] = effect(function()
+            src()
+        end)
+    end
+
+    START()
+    src(1)
+end)
+
 N /= 1024
 
 TITLE "values()"
@@ -186,7 +200,7 @@ BENCH("all new", function()
 
     START(N)
 
-    indexes(source, function()
+    values(source, function()
         return {}
     end)()
 end)
@@ -200,7 +214,7 @@ BENCH("no changes", function()
 
     local source = flec(data)
 
-    indexes(source, function()
+    values(source, function()
         return {}
     end)()
 
@@ -218,7 +232,7 @@ BENCH("all changes", function()
 
     local source = flec(data)
 
-    indexes(source, function()
+    values(source, function()
         return {}
     end)()
 
@@ -240,7 +254,7 @@ BENCH("all deletions", function()
 
     local source = flec(data)
 
-    indexes(source, function()
+    values(source, function()
         return {}
     end)()
 
