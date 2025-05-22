@@ -5,6 +5,7 @@ local flec = teisu.flec
 local effect = teisu.effect
 local root = teisu.root
 local cleanup = teisu.cleanup
+local peek = teisu.peek
 
 type SKIP = types.SKIP
 type CASE = types.CASE
@@ -219,5 +220,32 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 				end)
 			end)
 		end)
+	end
+
+	do
+		CASE("nested effects wrapped with peek() are bypassed")
+
+		local a = flec(0)
+		local b = flec(0)
+		local cleanups = 0
+		effect(function()
+			a()
+
+			peek(function()
+				effect(function()
+					cleanup(function() cleanups += 1 end)
+
+					b(a())
+				end)
+
+				return nil
+			end)
+		end)
+
+		CHECK(b() == 0)
+		CHECK(cleanups == 0)
+		a(1)
+		CHECK(b() == 1)
+		CHECK(cleanups == 1)
 	end
 end
