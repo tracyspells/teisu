@@ -6,6 +6,7 @@ local testkit = require("../testkit")
 
 local flec = teisu.flec
 local computed = teisu.computed
+local effect = teisu.effect
 local cleanup = teisu.cleanup
 local castToNode = teisu_graph.castToReactable
 local equals = testkit.seq
@@ -145,5 +146,20 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 		dependencies()
 		CHECK(reruns == 4)
 		CHECK(current == 2)
+	end
+
+	do
+		CASE("will error if an effect is detected inside the callback")
+
+		CHECK_EXPECT_ERROR(function()
+			local input = flec(0)
+			computed(function()
+				effect(function()
+					input()
+				end)
+				
+				return true
+			end)()
+		end)
 	end
 end
