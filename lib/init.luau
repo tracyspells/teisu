@@ -67,10 +67,8 @@ end
 
 local function apply(instance: Instance)
 	return function(props: { [any]: any })
-		local destroy = root(function()
-			new(instance, props)
-		end)
-		instance.Destroying:Once(destroy)
+		creation.apply(instance, props)
+		
 		return instance
 	end
 end
