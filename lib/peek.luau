@@ -16,10 +16,10 @@ return function<T>(target: UsedAs<T>, dont_untrack: boolean?): T
 		return target()
 	end
 
-	local captured = scope.captures
-	scope.captures = false -- disable dependency tracking
+	local captured, effect_captures = scope.captures, scope.effect_captures
+	scope.captures, scope.effect_captures = false, false -- disable dependency tracking
 	local result = target()
-	scope.captures = captured :: any
+	scope.captures, scope.effect_captures = captured :: any, effect_captures :: any
 
 	return result
 end
