@@ -8,6 +8,7 @@
     "client": "lib/sync/client",
     "computed": "lib/computed",
     "conditions": "lib/conditions",
+    "context": "lib/context",
     "convert": "lib/animation/convert",
     "creation": "lib/creation",
     "defaults": "lib/creation/defaults",

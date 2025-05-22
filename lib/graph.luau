@@ -17,6 +17,7 @@ export type Scope = {
 	cleanups: { Task | Cleanup } | false, -- { object, cleanup_function }
 	captures: { [Node<any>]: boolean } | false,
 	effect_captures: number | false,
+	contexts: { [number]: unknown } | false,
 	owned: { Scope } | false,
     owner: Scope | false,
 	type: ("cleanup")?,
@@ -63,6 +64,7 @@ local function new_scope(owner: Scope?, type: ("cleanup")?): Scope
 		cleanups = false,
 		captures = false,
 		effect_captures = false,
+		contexts = false,
 		owned = false,
 		owner = if owner ~= nil then owner else false,
 		type = type,
@@ -153,6 +155,14 @@ local function destroy_scope(scope: Scope)
 		local owned = scope.owned
 
 		while owned[1] do destroy_scope(owned[1]) end
+	end
+end
+
+local function set_context<T>(scope: Scope, context_id: number, value: T)
+	if scope.contexts ~= false then
+		scope.contexts[context_id] = value
+	else
+		scope.contexts = { [context_id] = value }
 	end
 end
 
@@ -407,6 +417,7 @@ return table.freeze {
 	push_cleanup = push_cleanup,
 	flush_cleanups = flush_cleanups,
 	flush_captures = flush_captures,
+	set_context = set_context,
 
 	createSourceNode = createSourceNode,
 	createDerivedNode = createDerivedNode,
