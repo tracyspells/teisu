@@ -48,9 +48,19 @@ local function computed<T>(callback: () -> T, equals: ((old: T, new: T) -> boole
 		local old = node.cache :: T
 
 		local scope = new_scope(owner)
+		local function runner(): T
+			local new_value = callback()
+
+			if scope.effect_captures ~= false then
+				return error(`cannot run an effect inside a computed`)
+			end
+
+			return new_value
+		end
+
 		push_scope(scope)
 		local new = try(
-			callback, 
+			runner, 
 			function() pop_scope() end,
 			function() destroy_scope(scope) end
 		)
