@@ -5,7 +5,6 @@ local flec = teisu.flec
 local effect = teisu.effect
 local root = teisu.root
 local cleanup = teisu.cleanup
-local peek = teisu.peek
 
 type SKIP = types.SKIP
 type CASE = types.CASE
