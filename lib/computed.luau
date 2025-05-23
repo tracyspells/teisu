@@ -1,8 +1,6 @@
 local types = require("@types/")
 local graph = require("@graph/")
 
-type Set<T> = types.Set<T>
-
 type Molecule<T> = types.Molecule<T>
 type Node<T> = types.Node<T>
 
