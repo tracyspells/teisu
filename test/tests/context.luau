@@ -3,6 +3,8 @@ local types = require("../types")
 
 local context = teisu.context
 local root = teisu.root
+local effect = teisu.effect
+local show = teisu.show
 
 local do_nothing = function() return nil end
 
@@ -52,6 +54,50 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 
             CHECK(v == 2)
             CHECK(ctx.consume() == 1)
+        end)
+    end
+
+    do
+        CASE("cascading contexts")
+
+        local a = context(1)
+        local b = context()
+
+        local function component_three()
+            effect(function()
+                local result_a = a.consume()
+                local result_b = b.consume()
+
+                CHECK(result_a == 2)
+                CHECK(result_b == true)
+            end)
+
+            CHECK(a.consume() == 2)
+
+            return true
+        end
+
+        local function component_two()
+            local c = show(true, function()
+                return a.provide(2, component_three)
+            end)
+
+            CHECK(a.consume() == 1)
+            return c
+        end
+
+        local function component_one()
+            local result = a.consume()
+            CHECK(result == 1)
+
+            return b.provide(true, component_two)
+        end
+
+        root(function()  
+            local result = component_one()
+            CHECK(result() == true)
+            CHECK(a.consume() == 1)
+            CHECK(b.consume() == nil)
         end)
     end
 end
