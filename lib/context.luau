@@ -41,7 +41,7 @@ local function create<T>(...: T): Context<T>
 
     context.consume = function(): T
         local owner = get_scope()
-        if owner == nil then error(`attempt to set context outside of a scope`) end
+        if owner == nil then error(`attempt to get context value outside of a scope`) end
         
         local scope: (graph.Scope | false) = owner
 
