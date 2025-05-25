@@ -75,6 +75,13 @@ export default defineConfig({
         },
 
         {
+          text: "Advanced",
+          items: [
+            { text: "Contexts", link: "/tutorials/advanced/contexts" },
+          ],
+        },
+
+        {
           text: "UI",
           items: [
             { text: "Element Creation", link: "/tutorials/instances/element-creation" },
@@ -106,6 +113,7 @@ export default defineConfig({
             { text: "Element Creation", link: "/api/element-creation" },
             { text: "Animation", link: "/api/animation" },
             { text: "Networking", link: "/api/networking" },
+            { text: "Context", link: "/api/context" },
           ]
         }
       ],
