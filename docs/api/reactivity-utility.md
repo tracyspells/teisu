@@ -90,7 +90,7 @@ function batch(callback: () -> ()): ()
 
 ### Parameters
 
--   `callback`: A function that updates atoms. Effects and computeds will only be notified once all changes have been applied.
+-   `callback`: A function that updates flecs. Effects and computeds will only be notified once all changes have been applied.
 
 ### Returns
 
