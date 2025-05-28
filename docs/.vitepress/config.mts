@@ -75,13 +75,6 @@ export default defineConfig({
         },
 
         {
-          text: "Advanced",
-          items: [
-            { text: "Contexts", link: "/tutorials/advanced/contexts" },
-          ],
-        },
-
-        {
           text: "UI",
           items: [
             { text: "Element Creation", link: "/tutorials/instances/element-creation" },
@@ -97,7 +90,14 @@ export default defineConfig({
           items: [
             { text: "Server-Client Sync", link: "/tutorials/networking" },
           ],
-        }
+        },
+
+        {
+          text: "Advanced",
+          items: [
+            { text: "Contexts", link: "/tutorials/advanced/contexts" },
+          ],
+        },
       ],
 
       "/api/": [
