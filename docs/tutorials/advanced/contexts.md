@@ -67,3 +67,9 @@ end, Players.LocalPlayer.PlayerGui)
 ```
 :::
 
+<!-- 
+    TODO: 
+    - add a section using flecs/molecules with contexts
+    - add a guide about using multiple context providers in your app  
+-->
+
