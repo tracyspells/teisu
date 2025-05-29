@@ -13,6 +13,7 @@ local observe = require("@observe/")
 local computed = require("@computed/")
 local peek = require("@peek/")
 local batch = require("@batch/")
+local context = require("@context/")
 
 export type Flec<T> = types.Flec<T>
 export type flec<T> = Flec<T>
@@ -22,6 +23,8 @@ export type Derivable<T> = types.UsedAs<T>
 export type derivable<T> = Derivable<T>
 export type Spring<T> = types.Spring<T>
 export type spring<T> = Spring<T>
+export type Context<T> = types.Context<T>
+export type context<T> = Context<T>
 export type SyncPayload = types.SyncPayload
 export type syncPayload = SyncPayload
 export type Animatable = types.Animatable
@@ -67,10 +70,8 @@ end
 
 local function apply(instance: Instance)
 	return function(props: { [any]: any })
-		local destroy = root(function()
-			new(instance, props)
-		end)
-		instance.Destroying:Once(destroy)
+		creation.apply(instance, props)
+		
 		return instance
 	end
 end
@@ -112,6 +113,7 @@ return table.freeze {
 	subscribe = subscribe,
 	cleanup = cleanup,
 	peek = peek,
+	context = context,
 
 	-- tables
 	keys = mapped.keys,

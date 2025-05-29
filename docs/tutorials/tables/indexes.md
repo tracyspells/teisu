@@ -1,6 +1,6 @@
 # Indexes
 
-`Teisu.indexes` is a state object that processes indexes instead of values.
+Sometimes you may want to rearrange values in an array or dictionary and detect what has been moved. `Teisu.indexes` allows you to do this. 
 
 ## Usage
 

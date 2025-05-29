@@ -86,11 +86,18 @@ export default defineConfig({
         },
 
         {
+          text: "Advanced",
+          items: [
+            { text: "Context", link: "/tutorials/advanced/context" },
+          ],
+        },
+
+        {
           text: "Networking",
           items: [
             { text: "Server-Client Sync", link: "/tutorials/networking" },
           ],
-        }
+        },
       ],
 
       "/api/": [
