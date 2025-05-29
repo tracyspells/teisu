@@ -27,7 +27,7 @@ export default defineConfig({
   
     nav: [
       { text: "Home", link: "/" },
-      { text: "Tutorials", link: "/tutorials/getting-started" },
+      { text: "Tutorials", link: "/tutorials/fundamentals/flecs" },
       { text: "API", link: "/api/teisu" },
     ],
 
