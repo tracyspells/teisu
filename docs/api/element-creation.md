@@ -33,6 +33,10 @@ function new(instance: Instance): (Properties) -> Instance
     -   **...and the value is an Instance**: sets the instance as the child.
 :::
 
+::: danger
+You cannot call `new` outside of a scope.
+:::
+
 ### Parameters
 
 `new` can either take a `string` or an `Instance` as its first argument:
