@@ -27,7 +27,7 @@ export default defineConfig({
   
     nav: [
       { text: "Home", link: "/" },
-      { text: "Tutorials", link: "/tutorials/getting-started" },
+      { text: "Tutorials", link: "/tutorials/fundamentals/flecs" },
       { text: "API", link: "/api/teisu" },
     ],
 
@@ -38,6 +38,7 @@ export default defineConfig({
           text: "Getting Started",
           items: [
             { text: "Installation", link: "/tutorials/getting-started" },
+            { text: "Why Teisu?", link: "/tutorials/getting-started/why-teisu" },
           ]
         },
 
@@ -86,11 +87,18 @@ export default defineConfig({
         },
 
         {
+          text: "Advanced",
+          items: [
+            { text: "Context", link: "/tutorials/advanced/context" },
+          ],
+        },
+
+        {
           text: "Networking",
           items: [
             { text: "Server-Client Sync", link: "/tutorials/networking" },
           ],
-        }
+        },
       ],
 
       "/api/": [

@@ -53,7 +53,7 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 		local function runner(...): T
 			local new_value = callback(...)
 
-			if scope.effect_captures > 0 then
+			if scope.effect_captures ~= false then
 				return error(`cannot run an effect inside another effect`)
 			end
 
@@ -82,7 +82,9 @@ local function effect<T>(callback: (dispose: Cleanup, previous_state: T) -> T, i
 	end)
 
 	if owner then
-		owner.effect_captures += 1
+		local new_captures = if owner.effect_captures ~= false then owner.effect_captures else 0
+		new_captures += 1
+		owner.effect_captures = new_captures
 		push_cleanup(owner, dispose, node)
 	end
 

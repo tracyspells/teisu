@@ -107,12 +107,80 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
 	end
 
     do
+        CASE("scoped show")
+
+        local component_cleanup_count = 0
+        local fallback_cleanup_count = 0
+        local is_root_scope_cleaned_up = false
+
+        local input = flec(true :: boolean?)
+
+        local destroy, output = root(function()
+            local output  
+            cleanup(function() is_root_scope_cleaned_up = true end)
+
+            output = show(
+                input, 
+                function()
+                    cleanup(function() component_cleanup_count += 1 end)
+
+                    return 1  
+                end,
+
+                function()
+                    cleanup(function() fallback_cleanup_count += 1 end)
+
+                    return 2  
+                end
+            )
+
+            return output
+        end)
+
+        CHECK(is_root_scope_cleaned_up == false)
+
+        CHECK(output() == 1)
+
+        input(false)
+
+        CHECK(output() == 2)
+        CHECK(component_cleanup_count == 1)
+        CHECK(fallback_cleanup_count == 0)
+
+        input(true)
+
+        CHECK(output() == 1)
+        CHECK(component_cleanup_count == 1)
+        CHECK(fallback_cleanup_count == 1)
+
+        input(false)
+
+        CHECK(output() == 2)
+        CHECK(component_cleanup_count == 2)
+        CHECK(fallback_cleanup_count == 1)
+
+        input(nil)
+        CHECK(output() == 2)
+        CHECK(component_cleanup_count == 2)
+        CHECK(fallback_cleanup_count == 2)
+
+        destroy()
+        CHECK(is_root_scope_cleaned_up == true)
+    end
+
+    do
         CASE("dont show component if input isnt truthy")
 
         local input = flec(false)
         local one = function() return 1 end
 
         local output = show(input, one)
+        CHECK(output() ~= 1)
+
+        input(true)
+        CHECK(output() == 1)
+
+        input(false)
         CHECK(output() ~= 1)
     end
 

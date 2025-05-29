@@ -23,7 +23,7 @@ print(animated()) --> 0.24775...
 print(peek(animated))
 ```
 
-To configure how the spring moves, you can give it `speed` and `damping` arguments. Both of these are optional, and can be state objects if desired.
+To configure how the spring moves, you can give it `speed` and `damping` arguments. Both of these are optional, and can be molecules if desired.
 
 ```luau
 local goal = flec(1)
@@ -52,6 +52,13 @@ To check if a spring has reached it's destination, you can use `.onCompleted()`:
 animated.onComplete(function(goal: number)
     print("we've reached our goal!")
 end)
+```
+
+If you're outside of a scope, you can destroy a spring via `Teisu.cleanup`.
+
+```luau {2}
+task.wait(5)
+Teisu.cleanup(animated)
 ```
 
 You can use many different kinds of values as springs, not just numbers.

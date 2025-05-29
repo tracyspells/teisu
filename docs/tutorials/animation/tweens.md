@@ -27,9 +27,9 @@ To configure how a tween animates, you can provide a [property table](./tweens.m
 
 ```luau {2}
 local goal = flec(1)
-local style = { duration = 0.5, style = "Sine" }
+local props = { duration = 0.5, style = "Sine" }
 
-local animated = tween(goal, style)
+local animated = tween(goal, props)
 ```
 
 To check if a tween has reached it's destination, you can use `.onComplete()`:
@@ -38,6 +38,13 @@ To check if a tween has reached it's destination, you can use `.onComplete()`:
 animated.onComplete(function(goal: number)
     print("we've reached our goal!")
 end)
+```
+
+If you're outside of a scope, you can destroy a tween via `Teisu.cleanup`.
+
+```luau {2}
+task.wait(5)
+Teisu.cleanup(animated)
 ```
 
 You can use many different kinds of values as tweens, not just numbers.

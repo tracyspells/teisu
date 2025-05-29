@@ -240,7 +240,7 @@ Runs a callback in a stable scope.
 ```luau
 type Cleanup = () -> ()
 
-function root<T...>(callback: () -> T...): (Cleanup, T...)
+function root<T...>(callback: (destroy: Cleanup) -> T...): (Cleanup, T...)
 ```
 
 ### Parameters

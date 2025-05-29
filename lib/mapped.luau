@@ -168,7 +168,13 @@ local function mapped<K0, V0, K1, V1>(
 	end
 
 	node = create_derived_node(function()
-		node.cache = {}
+		if node.cache == false then
+			node.cache = {}
+		else
+			local copy = table.clone(node.cache)
+			table.clear(copy)
+			node.cache = copy
+		end
 
 		-- step 1: capture dependencies
 		push_scope(sub_owner)
@@ -328,7 +334,13 @@ local function indexes<K0, V0, V1>(input: UsedAs<{ [K0]: V0 }>, mapper: (V0, Mol
 	end
 
 	node = create_derived_node(function()
-		node.cache = {}
+		if node.cache == false then
+			node.cache = {}
+		else
+			local copy = table.clone(node.cache)
+			table.clear(copy)
+			node.cache = copy
+		end
 
 		-- step 1: capture dependencies
 		push_scope(sub_owner)

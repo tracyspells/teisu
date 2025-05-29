@@ -41,6 +41,11 @@ export type Tween<T> = Molecule<T> & {
     onComplete: (callback: (value: T) -> ()) -> Cleanup,
 }
 
+export type Context<T> = {
+	provide: <V>(T, (() -> V)) -> V,
+	consume: () -> T,
+}
+
 export type UsedAs<T> = T | () -> T
 export type Use = <T>(target: UsedAs<T>) -> T
 

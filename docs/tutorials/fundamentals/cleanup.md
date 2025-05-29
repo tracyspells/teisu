@@ -4,7 +4,7 @@ Teisu provides a `cleanup()` function for you to use in situations where you nee
 
 ## Usage
 
-If `cleanup()` is called inside a stable scope, it won't run the callback *until* the stable scope created by `Teisu.root` is destroyed:
+If `cleanup()` is called inside a scope, it won't run the callback *until* the scope is destroyed:
 
 ```luau {5-7}
 local root = Teisu.root
@@ -22,7 +22,7 @@ end)
 task.delay(5, destroy)
 ```
 
-However, if `cleanup()` is called outside of a stable scope, it will clean up whatever you pass into the function **immediately**.
+However, if `cleanup()` is called outside of a scope, it will clean up whatever you pass into the function **immediately**.
 
 ::: code-group
 
