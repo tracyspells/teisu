@@ -38,6 +38,7 @@ export default defineConfig({
           text: "Getting Started",
           items: [
             { text: "Installation", link: "/tutorials/getting-started" },
+            { text: "Why Teisu?", link: "/tutorials/getting-started/why-teisu" },
           ]
         },
 
