@@ -1,3 +1,9 @@
+---
+next:
+  text: 'Why Teisu?'
+  link: './why-teisu'
+---
+
 # Installation
 
 ## Wally
