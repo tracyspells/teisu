@@ -23,7 +23,7 @@ print(animated()) --> 0.24775...
 print(peek(animated))
 ```
 
-To configure how the spring moves, you can give it `speed` and `damping` arguments. Both of these are optional, and can be state objects if desired.
+To configure how the spring moves, you can give it `speed` and `damping` arguments. Both of these are optional, and can be molecules if desired.
 
 ```luau
 local goal = flec(1)
