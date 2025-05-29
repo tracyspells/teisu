@@ -8,6 +8,7 @@ local push_scope = graph.push_scope
 local pop_scope = graph.pop_scope
 local get_scope = graph.get_scope
 local new_scope = graph.new_scope
+local flush_captures = graph.flush_captures
 local set_context = graph.set_context
 local is_none = patch.is_none
 
@@ -31,6 +32,7 @@ local function create<T>(...: T): Context<T>
         local on_error = function(msg: string) return debug.traceback(msg, 3) end
         local ok, result = xpcall(callback, on_error)
         pop_scope()
+        flush_captures(scope)
 
         if not ok then
             error(`error while running context:\n\n{result}`, 0)
