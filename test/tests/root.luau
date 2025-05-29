@@ -23,6 +23,19 @@ return function(SKIP: SKIP, CASE: CASE, CHECK: CHECK, CHECK_EXPECT_ERROR: CHECK_
     end
 
     do
+        CASE("can self-destruct")
+
+        local is_destroyed = false
+        local destroy = root(function(destroy)
+            destroy()
+            is_destroyed = true
+        end)
+
+        CHECK_EXPECT_ERROR(destroy)
+        CHECK(is_destroyed == true)
+    end
+
+    do
         CASE("supports cleanup()")
 
         local updates = 0

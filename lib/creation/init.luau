@@ -72,7 +72,7 @@ local function new(class_or_instance: string | Instance, props: Props?): ((Props
 	return result
 end
 
-local function root<T...>(fn: () -> T...): (Cleanup, T...)
+local function root<T...>(fn: (Cleanup) -> T...): (Cleanup, T...)
 	local scope = new_scope()
 	local is_destroyed = false
 	
@@ -87,7 +87,7 @@ local function root<T...>(fn: () -> T...): (Cleanup, T...)
 	end
 
 	local index = push_scope(scope)
-	local result = { xpcall(fn, debug.traceback) }
+	local result = { xpcall(fn, debug.traceback, destroy) }
 	pop_scope(index)
 
 	if not result[1] then
