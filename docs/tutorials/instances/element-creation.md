@@ -28,6 +28,16 @@ local frame = new "Frame" {
 }
 ```
 
+Alternatively, you can pass your `props` as the second argument in `new`:
+
+```luau {1,5}
+local frame = new("Frame", {
+    BackgroundColor3 = Color3.new(1, 0, 0),
+    BackgroundTransparency = 0.5,
+    Size = UDim2.fromOffset(250, 50)
+})
+```
+
 ## Parenting Children
 
 You can pass in child UI elements inside your property table:
