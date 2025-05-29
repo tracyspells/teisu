@@ -1,86 +1,69 @@
 # Scopes
 
-In [Vide](https://centau.github.io/vide/), core reactive functions like `effect()` have to be created inside a stable scope.
+In Teisu, you create a lot of objects: Instances, signals, connections, threads, etc. These objects need to be destroyed when you're done with them.
 
-```luau
-local root = vide.root
-local source = vide.source
-local effect = vide.effect
+Teisu's scopes allow you to do so with a minimal, clean API. With that said, there are things you need to know:
 
-local count = source(0)
+1. There are two types of scopes: stable and reactive.
 
-local function setup()
-    effect(function()
-        print(count())
-    end)
-end
+    - Stable scopes *never* rerun.
+    - Reactive scopes can rerun.
 
-setup() -- error, effect() tried to create a reactive scope with no stable scope
+    `root()` creates a stable scope under the hood, and `effect()` and `computed()` create a reactive scope.
 
-local destroy = root(setup) -- ok since effect() was called in a stable scope
+2. An effect **cannot** be created within a computed object or another effect.
 
-count(1) -- prints "1"
-count(2) -- prints "2"
+3. Whenever a scope is destroyed, any scope created within that scope is also destroyed.
 
-destroy()
+    It doesn't matter how nested a scope is, it will get cleaned up.
 
-count(3) -- reactive scope created by effect() is destroyed, it does not rerun
-```
+    ```luau
+    local flec = teisu.flec
+    local effect = teisu.effect
+    local root = teisu.root
 
-This is neat! But...I find this to be a limitation. I wanted a way to use `effect()` without having to deal with this.
+    local count = flec(0)
 
-So I did.
-
-```luau
-local flec = teisu.flec
-local effect = teisu.effect
-
-local count = flec(0)
-
-effect(function()
-    print(count())
-end)
-
-while count() < 5 do
-    count(function(old)
-        return old + 1
+    local destroy = root(function()
+        effect(function()
+            print(count())
+        end)
     end)
 
-    task.wait(1)
-end
-```
+    while count() < 5 do
+        count(function(old)
+            return old + 1
+        end)
 
-Nice and simple. The inspiration behind this was thanks to [Charm](https://github.com/littensy/charm).
+        task.wait(1)
+    end
 
-## Why add `Teisu.root` then?
+    destroy() -- destroys the reactive scope created by effect()
+    ```
 
-`Teisu.root` is different from `Vide.root` in the sense that the "stable scope" that's created is only used to schedule cleanup functions. Let's take a look at this example:
+4. Reactive scopes don't have to be created underneath a stable scope. 
 
-```luau {8-10}
-local flec = teisu.flec
-local effect = teisu.effect
-local root = teisu.root
+    Effects and computeds can be used *anywhere*!
 
-local destroy, count = root(function()
+    ```luau
+    local flec = teisu.flec
+    local effect = teisu.effect
+
     local count = flec(0)
 
     effect(function()
         print(count())
     end)
 
-    return count
-end)
+    while count() < 5 do
+        count(function(old)
+            return old + 1
+        end)
 
-while count() < 5 do
-    count(function(old)
-        return old + 1
-    end)
+        task.wait(1)
+    end
+    ```
 
-    task.wait(1)
-end
+Scopes may seem tricky to understand, but they're designed so that as long as you understand the things mentioned above, you won't have to worry about them.
 
-destroy()
-```
-When the effect (that is highlighted) is created, the function that destroys the effect is scheduled for later deletion. By the time `destroy` is called, we destroy the effect and the stable scope itself.
-
-In the next section, you'll learn how to schedule your own functions for deletion inside a stable scope.
+In the next section, you'll learn how to clean up a scope.

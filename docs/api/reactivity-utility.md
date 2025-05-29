@@ -2,7 +2,7 @@
 
 ## cleanup()
 
-If called outside a stable scope, it will run the callback immediately. If called inside a stable scope, it queues the callback to run when the scope is destroyed.
+If called outside a scope, it will run the callback **immediately**. If called inside a scope, it queues the callback to run when the scope is destroyed.
 
 ```luau
 function cleanup(object: Function | Disconnectable | Destroyable | Animatable<unknown> | thread)
@@ -143,7 +143,7 @@ function context<T>(default_value: T): Context<T>
    - `.consume`: Grabs the context value that was provided via `.provide`. If no value is found, the function will return `default_value`.
 
 ::: danger
-You cannot use these methods outside of a `root()` call.
+You cannot use these methods outside of a scope.
 :::
 
 **Example:**
