@@ -40,6 +40,13 @@ animated.onComplete(function(goal: number)
 end)
 ```
 
+If you're outside of a scope, you can destroy a tween via `Teisu.cleanup`.
+
+```luau {2}
+task.wait(5)
+Teisu.cleanup(animated)
+```
+
 You can use many different kinds of values as tweens, not just numbers.
 
 <!--@include: @api/animation.md{5,9}-->
