@@ -1,13 +1,14 @@
 local cleanup = require("@cleanup/")
 
+local metatable = table.freeze { type = "Action" }
+
 local function is_action(obj: any): boolean
-	local meta = getmetatable(obj)
-	return meta ~= nil and meta.type == "Action"
+	return getmetatable(obj) == metatable
 end
 
 local function action(callback: (Instance) -> ())
 	local a = { callback }
-	setmetatable(a :: any, table.freeze { type = "Action" })
+	setmetatable(a :: any, metatable)
 	return table.freeze(a)
 end
 
