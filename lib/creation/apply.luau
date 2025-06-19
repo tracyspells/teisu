@@ -176,7 +176,7 @@ local function process_properties(props: Map<unknown, unknown>, instance: Instan
 				(instance :: any)[key] = value -- set property
 			end
 		elseif typeof(key) == "number" then
-			if type(value) == "userdata" then
+			if typeof(value) == "Instance" then
 				(value :: Instance).Parent = instance -- parent child
 			elseif is_action(value) then
 				table.insert(cache.actions, (value :: any)[1] :: (Instance) -> ())
