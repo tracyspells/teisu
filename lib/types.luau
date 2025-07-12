@@ -46,7 +46,7 @@ export type Context<T> = {
 	consume: () -> T,
 }
 
-export type UsedAs<T> = T | () -> T
+export type UsedAs<T> = (() -> T) | T
 export type Use = <T>(target: UsedAs<T>) -> T
 
 export type PatchOperation = "add" | "remove" | "replace"
