@@ -9,6 +9,7 @@
           "@action": "lib/action",
           "@animation": "lib/animation",
           "@apply": "lib/creation/apply",
+          "@async": "lib/async",
           "@batch": "lib/batch",
           "@cleanup": "lib/creation/cleanup",
           "@client": "lib/sync/client",
