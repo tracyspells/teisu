@@ -11,6 +11,7 @@ local subscribe = require("@subscribe/")
 local effect = require("@effect/")
 local observe = require("@observe/")
 local computed = require("@computed/")
+local async = require("@async/")
 local peek = require("@peek/")
 local batch = require("@batch/")
 local context = require("@context/")
@@ -45,16 +46,6 @@ local is_game = game ~= nil
 local is_server = is_game and game:GetService("RunService"):IsServer()
 
 local function on_step(deltaTime: number)
-	if is_game then
-		debug.profilebegin("TEISU ANIMATION")
-	end
-
-	update_animations(deltaTime)
-
-	if is_game then
-		debug.profileend()
-	end
-
 	if not is_game or is_server then
 		if is_game then
 			debug.profilebegin("TEISU SYNC")
@@ -65,6 +56,16 @@ local function on_step(deltaTime: number)
 		if is_game then
 			debug.profileend()
 		end
+	end
+
+	if is_game then
+		debug.profilebegin("TEISU ANIMATION")
+	end
+
+	update_animations(deltaTime)
+
+	if is_game then
+		debug.profileend()
 	end
 end
 
@@ -102,6 +103,7 @@ return table.freeze {
 	flec = flec,
 	computed = computed,
 	effect = effect,
+	async = async,
 
 	-- conditions
 	show = conditions.show,

@@ -14,7 +14,7 @@ Teisu.strict(true)
 
 Right now, strict mode provides better error handling when processing reactive functions (flecs, computeds, effects) and batching functions.
 
-Errors will provide the function's name and line number, and yielding in reactive functions will throw an error.
+Errors will provide the function's name and line number, and yielding in reactive functions (except [async](../../api/reactivity-core#async)) will throw an error.
 
 Example:
 

@@ -92,7 +92,7 @@ function computed<T>(callback: () -> T, equals: (old: T, new: T) -> boolean)
 `computed` returns a read-only flec.
 
 ::: danger
-Computed calculations should be immediate and <u>never delay</u>. You should never use a `computed` when you need to wait for something to happen (e.g. waiting for a server to respond to a request).
+Computed calculations should be immediate and <u>never delay</u>. You should never use a `computed` when you need to wait for something to happen (e.g. waiting for a server to respond to a request); instead, use [`async()`](#async).
 :::
 
 
@@ -230,6 +230,54 @@ count(count() + 1) -- prints `count has changed!`, and then `1`
 count(count() + 1) -- prints `count has changed!`, and then `2`
 dispose() -- will not print anything, everything has been cleaned up at this point
 ```
+
+## async()
+
+Runs a function in a seperate thread to compute values and process yielding functions.
+
+```luau
+function async<T>(fallback: T, processor: ( set: (T) -> () ) -> T)
+```
+
+### Parameters
+
+-   `processor`: A function that is ran in a new thread, collecting dependencies and processing them. A `set` function is passed to this function, allowing you to update the `async`'s value inside the `processor`.
+
+-   `fallback`: The default value that gets set if the `processor` function errors.
+
+
+### Returns
+
+`async()` returns a read-only flec.
+
+**Examples:**
+
+::: code-group
+
+```luau [Example A]
+local result = async(nil :: { string }?, function()
+	task.wait(3)
+    return { "hello", "world" }
+end)
+
+print(result()) -- { "hello", "world" }
+```
+
+```luau [Example B]
+local value = async("loading...", function(set)
+	for i = 5, 1, -1 do
+        task.wait(1)
+        set(`time left: {i}`)
+    end
+
+    return "loading complete!"
+end)
+
+effect(function()
+    print(value())
+end)
+```
+:::
 
 
 ## root()
